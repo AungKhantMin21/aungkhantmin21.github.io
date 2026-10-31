@@ -1,167 +1,237 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-<head>
-  <title>Personal Portfolio - Bootstrap 5</title>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="stylesheet" href="css/font-awesome.min.css">
-  <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="css/bootstrap.min.css">
-</head>
-<body class="bg-light">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Aung Khant Min</title>
+    <meta
+      name="description"
+      content="Aung Khant Min builds AI and web tools that fit how people in Myanmar actually work."
+    />
+    <meta name="theme-color" content="#0B1622" />
+    <meta name="color-scheme" content="dark" />
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Aung Khant Min" />
+    <meta
+      property="og:description"
+      content="I build AI and web tools that fit how people in Myanmar actually work."
+    />
+    <meta property="og:url" content="https://aungkhantmin21.github.io/" />
+    <meta name="twitter:card" content="summary" />
+    <link rel="icon" href="favicon.svg" type="image/svg+xml" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Anybody:wdth,wght@50..150,300..900&family=Hanken+Grotesk:wght@400;500;600&display=swap"
+    />
+    <link rel="stylesheet" href="css/style.css" />
+  </head>
+  <body>
+    <a class="skip" href="#experience">Skip to experience</a>
 
-  <!-- navbar start -->  
-  <nav class="navbar navbar-dark bg-light">
-    <div class="container-lg">
-      <a class="navbar-brand fw-bold text-info" href="#"><span class="fs-2">A</span>ung<span class="fs-2">K</span>hant</a>
-      <ul class="nav justify-content-end">
-        <li class="nav-item">
-          <a class="nav-link text-info active" aria-current="page" href="#home">Home</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link text-muted" href="#about">About</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link text-muted" href="#Services">Services</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link text-muted" href="#Portfolio">Portfolio</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link text-muted" href="#Testimonial">Testimonial</a>
-        </li>
-        <li class="nav-item">
-          <a class="nav-link text-muted" href="#Contact">Contact</a>
-        </li>
-      </ul>
-
-      <!--<div class="dropdown">
-        <button class="btn btn-dark px-3" type="button" id="dropdownMenuButton1" data-bs-toggle="dropdown" aria-expanded="false">
-          <i class="fas fa-bars text-info"></i>
-        </button>
-        <ul class="dropdown-menu dropdown-menu-dark dropdown-menu-end py-0" aria-labelledby="dropdownMenuButton1">
-          <li><a class="dropdown-item py-2" href="#home">Home</a></li>
-          <li><a class="dropdown-item py-2" href="#about">About</a></li>
-          <li><a class="dropdown-item py-2" href="#services">Services</a></li>
-          <li><a class="dropdown-item py-2" href="#portfolio">Portfolio</a></li>
-          <li><a class="dropdown-item py-2" href="#testimonial">Testimonial</a></li>
-          <li><a class="dropdown-item py-2" href="#contact">Contact</a></li>
+    <!-- Hero -->
+    <header class="hero" id="top">
+      <nav class="nav" aria-label="Main">
+        <a class="nav__mark" href="#top" aria-label="Back to top">AKM</a>
+        <ul class="nav__links">
+          <li><a href="#experience">Experience</a></li>
+          <li><a href="#interests">Interests</a></li>
+          <li><a href="#contact">Contact</a></li>
         </ul>
-      </div>
-      !-->
+      </nav>
 
-    </div>
-  </nav>
+      <h1 class="hero__name" aria-label="Aung Khant Min">
+        <span class="fit" aria-hidden="true">Aung</span>
+        <span class="fit" aria-hidden="true">Khant</span>
+        <span class="fit" aria-hidden="true">Min</span>
+      </h1>
 
-  <!-- navbar end -->
-  <!-- Home section start -->
-
-  <section class="home" id="home">
-    <div class="container-lg">
-      <div class="row min-vh-100 align-items-center align-content-center">
-        <div class="col-md-6 mt-5">
-          <div class="home-text">
-            <p class="my-1 text-muted">Hello, I'm</p>
-            <h1 class="text-uppercase text-info fs-1 fw-bold">Web Designer</h1>
-            <h2 class="fs-3">Aung Khant Min</h2>
-            <p class="text-muted">Lorem ipsum dolor, sit amet consectetur adipisicing elit. Aliquam accusantium reprehenderit culpa vitae. Reprehenderit asperiores ipsa quia molestias similique voluptatibus nam necessitatibus esse, maiores totam, est aliquid earum nesciunt? Architecto.</p>
-            <a href="#" class="btn btn-info text-light px-4">My Work</a>
-          </div>
+      <div class="hero__foot">
+        <div>
+          <p class="hero__line">
+            I build AI and web tools that fit how people in Myanmar actually
+            work.
+          </p>
+          <p class="hero__now">
+            <span class="pulse" aria-hidden="true"></span>Now: DevOps Engineer
+            at Myanmar Zarla Distribution
+          </p>
         </div>
-        <div class="col-md-6 text-center">
-          <div class="home-img">
-            <img id="profile-img" class="img-fluid" src="img/profile.JPG" alt="profile img">
-          </div>
+        <div class="hero__actions">
+          <a class="btn btn--primary" href="#experience">See my experience</a>
+          <a class="btn btn--ghost" href="#contact">Get in touch</a>
         </div>
       </div>
-    </div>
-  </section>
+    </header>
 
-  <!-- Home section end -->
-  <!-- About section start -->
-
-  <section class="about py-5 min-vh-100" id="about">
-    <div class="container-lg">
-      <div class="row justify-content-center">
-        <div class="col-lg-8">
-          <div class="section-title text-center">
-            <h2 class="fw-bold mb-5">About Me</h2>
-          </div>
+    <main>
+      <!-- Experience -->
+      <section
+        class="experience"
+        id="experience"
+        aria-labelledby="experience-title"
+      >
+        <div class="experience__head">
+          <h2 class="section-title" id="experience-title">Experience</h2>
+          <p class="experience__intro">
+            Three years across payments operations, early-stage startup
+            engineering and DevOps. Lately that means running infrastructure and
+            making AI useful in real workflows.
+          </p>
         </div>
-      </div>
-      <div class="row">
-        <div class="col-md-6">
-          <div class="about-text">
-            <h4 class="fs-4">Lorem ipsum, dolor sit amet consectetur adipisicing elit.</h4>
-            <p class="text-muted">Lorem, ipsum dolor sit amet consectetur adipisicing elit. Id molestiae assumenda reprehenderit error facilis reiciendis magni cumque optio? Nihil earum vitae voluptas animi repellendus inventore praesentium id doloribus. Sunt, suscipit?lorem Nihil earum vitae voluptas animi.</p>
-          </div>
-          <div class="row mt-4">
-            <div class="col-md-4">
-              <div class="fact-item text-center">
-                <h4 class="fw-bold fs-2">5</h4>
-                <p class="text-uppercase fw-light">Project Completed</p>
-              </div>
+
+        <ol class="timeline">
+          <li class="role role--current">
+            <p class="role__when">
+              <span><time datetime="2025-11">Nov 2025</time>–now</span>
+            </p>
+            <div class="role__body">
+              <h3 class="role__title">
+                DevOps Engineer / Project Coordinator<span class="role__org"
+                  >Myanmar Zarla Distribution</span
+                >
+              </h3>
+              <p class="role__summary">
+                I coordinate an enterprise AI platform built with an external
+                vendor, covering blockers, meeting cadence, and integration with
+                internal systems. I’m also taking over the team’s Kubernetes
+                GitOps cluster and building internal tools, including a
+                request/approval platform and n8n automations for HR.
+              </p>
+              <ul class="role__tags" aria-label="Tools">
+                <li>k3s</li>
+                <li>ArgoCD</li>
+                <li>Kustomize</li>
+                <li>Docker</li>
+                <li>n8n</li>
+                <li>Railway</li>
+                <li>LangGraph</li>
+                <li>Ollama</li>
+              </ul>
             </div>
-            <div class="col-md-4">
-              <div class="fact-item text-center">
-                <h4 class="fw-bold fs-2">0</h4>
-                <p class="text-uppercase fw-light">Happy Clients</p>
-              </div>
+          </li>
+          <li class="role">
+            <p class="role__when"><time datetime="2025">2025</time></p>
+            <div class="role__body">
+              <h3 class="role__title">
+                Core Engineer<span class="role__org">FlowCXP</span>
+              </h3>
+              <p class="role__summary">
+                One of the first engineers at an early-stage startup and owned
+                an internal ticketing system end to end, using Agentic
+                Engineering development to ship quickly.
+              </p>
+              <ul class="role__tags" aria-label="Tools">
+                <li>React</li>
+                <li>Node.js</li>
+                <li>PostgreSQL</li>
+                <li>AWS</li>
+              </ul>
             </div>
-            <div class="col-md-4">
-              <div class="fact-item text-center">
-                <h4 class="fw-bold fs-2">0</h4>
-                <p class="text-uppercase fw-light">Postive Reviews</p>
-              </div>
+          </li>
+          <li class="role">
+            <p class="role__when">
+              <time datetime="2023-06">Jun 2023</time>–<time datetime="2025-11"
+                >Nov 2025</time
+              >
+            </p>
+            <div class="role__body">
+              <h3 class="role__title">
+                Technical Operations Support<span class="role__org"
+                  >AYA Pay</span
+                >
+              </h3>
+              <p class="role__summary">
+                I started in technical operations support for a mobile payments
+                platform and grew into a supervisory role. Later I picked up
+                backend CRUD work with the dev team.
+              </p>
+              <ul class="role__tags" aria-label="Tools">
+                <li>Node.js</li>
+                <li>PostgreSQL</li>
+                <li>Internal ops tooling</li>
+              </ul>
             </div>
-          </div>
-          <div class="row mt-4">
-            <div class="col-md-12 d-flex align-items-center">
-              <button class="btn btn-info px-4 text-light me-5">
-                Download CV
-              </button>
-              <div class="social-links">
-                <a href="#" class="text-dark me-3 fs-5"><i class="fab fa-facebook-f"></i></a>
-                <a href="#" class="text-dark me-3 fs-5"><i class="fab fa-instagram"></i></a>
-                <a href="#" class="text-dark me-3 fs-5"><i class="fas fa-envelope"></i></a>
-                <a href="#" class="text-dark me-3 fs-5"><i class="fab fa-linkedin-in"></i></a>
-              </div>
-            </div>
-          </div>
+          </li>
+        </ol>
+      </section>
+
+      <!-- Interests -->
+      <section
+        class="interests"
+        id="interests"
+        aria-labelledby="interests-title"
+      >
+        <h2 class="section-title" id="interests-title">Interests</h2>
+        <ul class="interest-list">
+          <li class="interest">
+            <span class="interest__name">AI agents &amp; local models</span>
+            <span class="interest__note"
+              >What it takes to run LLMs on your own hardware, and to make
+              agents reliable enough for real work, beyond demos.</span
+            >
+          </li>
+          <li class="interest">
+            <span class="interest__name">Infrastructure</span>
+            <span class="interest__note"
+              >Understanding the systems underneath what I ship, not just the
+              app layer.</span
+            >
+          </li>
+          <li class="interest">
+            <span class="interest__name">Building for Myanmar</span>
+            <span class="interest__note"
+              >Local payments, Burmese language, and the way information moves
+              here all change what a good product looks like. Generic tools
+              rarely fit.</span
+            >
+          </li>
+          <li class="interest">
+            <span class="interest__name">Design &amp; craft</span>
+            <span class="interest__note"
+              >Watches, fragrance, and well-made things generally. It shapes how
+              I think about software too.</span
+            >
+          </li>
+          <li class="interest">
+            <span class="interest__name">JDM cars</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Contact -->
+      <section class="contact" id="contact" aria-labelledby="contact-title">
+        <h2 class="contact__title" id="contact-title">
+          Have a project in mind?
+        </h2>
+        <p class="contact__lede">
+          I’m open to work on AI tooling, infrastructure and products built for
+          Myanmar.
+        </p>
+        <div class="contact__actions">
+          <a
+            class="btn btn--primary btn--lg"
+            href="mailto:aungkhantmin212002@gmail.com"
+            >aungkhantmin212002@gmail.com</a
+          >
+          <button
+            class="btn btn--ghost btn--lg"
+            type="button"
+            data-copy="aungkhantmin212002@gmail.com"
+          >
+            Copy email
+          </button>
         </div>
-        <div class="col-md-6">
-          <div class="skill-item mb-4">
-            <h5 class="fs-6"><i class="fab fa-html5 fs-3 text-danger"></i> HTML</h5>
-            <div class="progress" style="height: 6px;">
-              <div class="progress-bar bg-danger" role="progressbar" style="width: 60%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-          </div>
-          <div class="skill-item mb-4">
-            <h5 class="fs-6"><i class="fab fa-css3-alt fs-3 text-info"></i> CSS</h5>
-            <div class="progress" style="height: 6px;">
-              <div class="progress-bar bg-info" role="progressbar" style="width: 40%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-          </div>
-          <div class="skill-item mb-4">
-            <h5 class="fs-6"><i class="fab fa-bootstrap fs-3" style="color:blueviolet;"></i> BOOTSTRAP</h5>
-            <div class="progress" style="height: 6px;">
-              <div class="progress-bar" role="progressbar" style="width: 80%; background-color:blueviolet;" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-          </div>
-          <div class="skill-item mb-4">
-            <h5 class="fs-6"><i class="fab fa-js-square fs-3 text-warning"></i> JAVASCRIPT</h5>
-            <div class="progress" style="height: 6px;">
-              <div class="progress-bar bg-warning" role="progressbar" style="width: 30%" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100"></div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
+        <p class="contact__status" role="status" aria-live="polite"></p>
+      </section>
+    </main>
 
-  <!-- About section end -->
+    <footer class="footer">
+      <p>© <span id="year">2026</span> Aung Khant Min</p>
+      <a href="#top">Back to top</a>
+    </footer>
 
-
-<script src="js/bootstrap.bundle.min.js"></script>
-</body>
+    <script src="js/main.js"></script>
+  </body>
 </html>
