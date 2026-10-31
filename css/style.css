@@ -391,6 +391,15 @@ a { color: inherit; }
   pointer-events: none;
 }
 
+/* Render a tall game at a larger size, then scale it down to fit the frame */
+.game__preview--zoom { --zoom: 0.5; }
+.game__preview--zoom iframe {
+  width: calc(100% / var(--zoom));
+  height: calc(100% / var(--zoom));
+  transform: scale(var(--zoom));
+  transform-origin: 0 0;
+}
+
 .game__cover {
   position: absolute;
   inset: 0;
@@ -472,6 +481,7 @@ a { color: inherit; }
   .role { grid-template-columns: 1fr; gap: 6px; }
   .interest { grid-template-columns: 1fr; }
   .game { grid-template-columns: 1fr; }
+  .game__preview--zoom { --zoom: 0.4; }
 }
 
 @media (max-width: 480px) {
