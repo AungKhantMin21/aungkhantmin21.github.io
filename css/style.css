@@ -339,8 +339,83 @@ a { color: inherit; }
   color: var(--muted);
 }
 
+/* Games */
+.games {
+  padding: clamp(72px, 12vw, 160px) var(--gutter);
+}
+
+.games__head {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px 48px;
+}
+
+.games__intro {
+  max-width: 42ch;
+  margin: 0;
+  color: var(--muted);
+  font-size: 1.125rem;
+}
+
+.game-list {
+  margin: clamp(32px, 5vw, 64px) 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: clamp(40px, 6vw, 72px);
+}
+
+.game {
+  display: grid;
+  grid-template-columns: minmax(0, 7fr) minmax(0, 5fr);
+  align-items: center;
+  gap: clamp(24px, 5vw, 72px);
+}
+
+.game__preview {
+  position: relative;
+  aspect-ratio: 4 / 3;
+  border-radius: 20px;
+  overflow: hidden;
+  background: var(--surface);
+  box-shadow: 0 0 0 1px var(--line);
+}
+
+.game__preview iframe {
+  width: 100%;
+  height: 100%;
+  border: 0;
+  display: block;
+  pointer-events: none;
+}
+
+.game__cover {
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  transition: box-shadow 0.25s ease;
+}
+.game__cover:hover { box-shadow: inset 0 0 0 2px var(--sky); }
+
+.game__title {
+  margin: 0;
+  font: 800 clamp(2rem, 4vw, 3.25rem)/1 var(--display);
+  font-stretch: 130%;
+  color: var(--frost);
+}
+
+.game__summary {
+  max-width: 44ch;
+  margin: 16px 0 0;
+}
+
+.game__play { margin-top: 28px; }
+
 /* Contact */
 .contact {
+  border-top: 1px solid var(--line);
   padding: clamp(96px, 14vw, 200px) var(--gutter);
   text-align: center;
   background:
@@ -396,6 +471,7 @@ a { color: inherit; }
   .experience__head { position: static; }
   .role { grid-template-columns: 1fr; gap: 6px; }
   .interest { grid-template-columns: 1fr; }
+  .game { grid-template-columns: 1fr; }
 }
 
 @media (max-width: 480px) {

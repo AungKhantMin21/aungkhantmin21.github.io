@@ -37,6 +37,7 @@
         <ul class="nav__links">
           <li><a href="#experience">Experience</a></li>
           <li><a href="#interests">Interests</a></li>
+          <li><a href="#games">Games</a></li>
           <li><a href="#contact">Contact</a></li>
         </ul>
       </nav>
@@ -196,6 +197,55 @@
           </li>
           <li class="interest">
             <span class="interest__name">JDM cars</span>
+          </li>
+        </ul>
+      </section>
+
+      <!-- Games -->
+      <section class="games" id="games" aria-labelledby="games-title">
+        <div class="games__head">
+          <h2 class="section-title" id="games-title">Games</h2>
+          <p class="games__intro">
+            Small games I build for fun. Each one loads instantly and plays in
+            a minute or less, on a phone or a desktop.
+          </p>
+        </div>
+
+        <ul class="game-list">
+          <!-- One <li> per game in /games -->
+          <li class="game">
+            <div class="game__preview">
+              <iframe
+                src="games/Lockstep.html"
+                title="Lockstep preview"
+                loading="lazy"
+                tabindex="-1"
+                aria-hidden="true"
+              ></iframe>
+              <a
+                class="game__cover"
+                href="games/Lockstep.html"
+                tabindex="-1"
+                aria-hidden="true"
+              ></a>
+            </div>
+            <div class="game__body">
+              <h3 class="game__title">Lockstep</h3>
+              <p class="game__summary">
+                A spark circles a ring. Tap the instant it crosses the gate, hit
+                dead centre for a Perfect, and build a multiplier as the pace
+                picks up.
+              </p>
+              <ul class="role__tags" aria-label="Details">
+                <li>One tap</li>
+                <li>Timing</li>
+                <li>Canvas</li>
+                <li>Web Audio</li>
+              </ul>
+              <a class="btn btn--primary game__play" href="games/Lockstep.html"
+                >Play Lockstep</a
+              >
+            </div>
           </li>
         </ul>
       </section>
