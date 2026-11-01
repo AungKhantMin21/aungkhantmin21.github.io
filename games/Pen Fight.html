@@ -1,633 +1,3338 @@
-<!doctype html><html><head><meta charset=utf8><meta name=viewport content="width=device-width,initial-scale=1,viewport-fit=cover"><style>:root{color-scheme:light;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}html{scroll-padding-top:env(safe-area-inset-top,0px)}body{margin:0;padding:0;font:14px -apple-system,BlinkMacSystemFont,sans-serif;background:#fff;color:#000}img{max-width:100%}[hidden]:not([hidden=until-found i]){display:none!important}</style></head><body>
-<title>Pen Fight</title>
-<meta name="claude:viewport-fit-sides" content="cover">
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Nunito:wght@600;800&display=swap">
-<style>
-/* Layout: top-down school desk fills the stage; player chips above, hint below; notebook-paper sheets for menus. Single committed look. */
-:root{
-  --floor:#26302f; --ink:#f4efe4; --dim:#b9b2a2; --paper:#fbf7ec; --rule:#b9cde6; --margin:#e58b8b;
-  --pencil:#2c2a33; --muted:#6b6672; --accent:#f2b134; --go:#2457d6;
-  --hand:"Patrick Hand","Comic Sans MS","Segoe Print",cursive;
-  --ui:"Nunito","Trebuchet MS",system-ui,sans-serif;
-  color-scheme:dark;
-}
-html,body{height:100%;margin:0;overflow:hidden;background:var(--floor);color:var(--ink);font-family:var(--ui);
-  -webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent}
-canvas{position:fixed;inset:0;width:100%;height:100%;display:block;touch-action:none}
-.bar{position:fixed;left:0;right:0;z-index:2;pointer-events:none;
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
-.top{top:0;padding-block:calc(10px + env(safe-area-inset-top,0px)) 6px}
-.bottom{bottom:0;padding-block:6px calc(12px + env(safe-area-inset-bottom,0px));display:flex;align-items:center;gap:12px}
-.chips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;min-height:34px}
-.chip{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:999px;background:rgba(0,0,0,.28);
-  font-weight:800;font-size:13px;color:var(--ink);border:2px solid transparent;transition:opacity .3s}
-.chip i{width:10px;height:10px;border-radius:50%;display:block}
-.chip small{font-size:10px;letter-spacing:.08em;color:var(--dim)}
-.chip em{font-style:normal;font-size:10px;letter-spacing:.06em;padding:1px 5px;border-radius:6px;color:#14181a}
-.chip b{font-variant-numeric:tabular-nums;color:var(--accent);margin-left:2px}
-.chip.cur{border-color:var(--accent);background:rgba(0,0,0,.45)}
-.chip.out{opacity:.38;text-decoration:line-through}
-.hint{flex:1;min-width:0;text-align:center;font-family:var(--hand);font-size:20px;line-height:1.2;color:var(--ink);min-height:1.2em}
-.snd{pointer-events:auto;width:44px;height:44px;flex:none;border-radius:50%;border:1px solid rgba(255,255,255,.18);
-  background:rgba(0,0,0,.35);color:var(--ink);display:grid;place-items:center;padding:0;cursor:pointer}
-.snd.off{color:var(--dim)}
-.spacer{width:44px;flex:none}
-.sheet{position:fixed;inset:0;z-index:5;display:flex;align-items:center;justify-content:center;background:rgba(20,24,24,.55);
-  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:16px}
-[hidden]{display:none!important}
-.card{width:100%;max-width:380px;max-height:100%;overflow:auto;color:var(--pencil);border-radius:6px;
-  padding:20px 18px 18px 44px;box-shadow:0 18px 40px rgba(0,0,0,.45);transform:rotate(-.8deg);
-  background:linear-gradient(90deg,transparent 30px,var(--margin) 30px,var(--margin) 32px,transparent 32px),
-    repeating-linear-gradient(transparent 0 27px,var(--rule) 27px 28px),var(--paper);display:flex;flex-direction:column;gap:12px}
-.card h1,.card h2{font-family:var(--hand);font-weight:400;margin:0;line-height:1;text-wrap:balance}
-.card h1{font-size:50px}
-.card h2{font-size:44px}
-.card p{margin:0;font-size:15px;line-height:1.5;max-width:36ch}
-.twists{margin:0;padding-left:18px;font-size:14px;line-height:1.5;display:flex;flex-direction:column;gap:2px}
-.lbl{font-size:12px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:var(--muted)}
-.seg{display:flex;gap:8px}
-.seg button,.slot button,.btn{font-family:var(--ui);font-weight:800;font-size:15px;cursor:pointer;border-radius:10px;
-  border:2px solid var(--pencil);background:transparent;color:var(--pencil);padding:8px 14px}
-.seg button{flex:1}
-.seg button[aria-pressed="true"]{background:var(--pencil);color:var(--paper)}
-.slots{display:flex;flex-direction:column;gap:12px}
-.slot{display:grid;grid-template-columns:auto 1fr;gap:4px 10px;align-items:center}
-.slot i{width:14px;height:14px;border-radius:50%}
-.slot .nm{font-family:var(--hand);font-size:22px;line-height:1}
-.slot .opts{grid-column:1/-1;display:flex;gap:8px}
-.slot .opts button{flex:1;padding:6px 8px;font-size:14px;min-width:0}
-.slot button.cpu{border-style:dashed}
-.slot small{grid-column:1/-1;font-size:12px;color:var(--muted)}
-.btn.primary{background:var(--go);border-color:var(--go);color:#fff;font-size:17px;padding:12px}
-.tally{display:flex;flex-direction:column;gap:4px;font-family:var(--hand);font-size:22px}
-.tally div{display:flex;align-items:center;gap:10px}
-.tally i{width:12px;height:12px;border-radius:50%}
-.tally span{flex:1}
-.tally b{font-variant-numeric:tabular-nums}
-button:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-.back{pointer-events:auto;height:44px;flex:none;padding:0 16px 0 12px;border-radius:22px;border:1px solid rgba(255,255,255,.18);
-  background:rgba(0,0,0,.35);color:var(--ink);display:flex;align-items:center;gap:6px;font:800 14px/1 var(--ui);text-decoration:none}
-.back:hover{background:rgba(0,0,0,.55)}
-.card-back{align-self:center;font-size:14px;font-weight:800;color:var(--muted);text-underline-offset:3px}
-.card-back:hover{color:var(--pencil)}
-.back:focus-visible,.card-back:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
-</style>
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1, viewport-fit=cover"
+    />
+    <meta name="theme-color" content="#26302f" />
+    <title>Pen Fight</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Patrick+Hand&family=Nunito:wght@600;800&display=swap"
+    />
+    <style>
+      /* Layout: top-down school desk fills the stage; player chips above, hint below; notebook-paper sheets for menus. Single committed look. */
+      :root {
+        --floor: #26302f;
+        --ink: #f4efe4;
+        --dim: #b9b2a2;
+        --paper: #fbf7ec;
+        --rule: #b9cde6;
+        --margin: #e58b8b;
+        --pencil: #2c2a33;
+        --muted: #6b6672;
+        --accent: #f2b134;
+        --go: #2457d6;
+        --hand: "Patrick Hand", "Comic Sans MS", "Segoe Print", cursive;
+        --ui: "Nunito", "Trebuchet MS", system-ui, sans-serif;
+        color-scheme: dark;
+      }
+      html,
+      body {
+        height: 100%;
+        margin: 0;
+        overflow: hidden;
+        background: var(--floor);
+        color: var(--ink);
+        font-family: var(--ui);
+        -webkit-user-select: none;
+        user-select: none;
+        -webkit-tap-highlight-color: transparent;
+      }
+      canvas {
+        position: fixed;
+        inset: 0;
+        width: 100%;
+        height: 100%;
+        display: block;
+        touch-action: none;
+      }
+      .bar {
+        position: fixed;
+        left: 0;
+        right: 0;
+        z-index: 2;
+        pointer-events: none;
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+      }
+      .top {
+        top: 0;
+        padding-block: calc(10px + env(safe-area-inset-top, 0px)) 6px;
+      }
+      .bottom {
+        bottom: 0;
+        padding-block: 6px calc(12px + env(safe-area-inset-bottom, 0px));
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+      .chips {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        justify-content: center;
+        min-height: 34px;
+      }
+      .chip {
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        background: rgba(0, 0, 0, 0.28);
+        font-weight: 800;
+        font-size: 13px;
+        color: var(--ink);
+        border: 2px solid transparent;
+        transition: opacity 0.3s;
+      }
+      .chip i {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+        display: block;
+      }
+      .chip small {
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        color: var(--dim);
+      }
+      .chip em {
+        font-style: normal;
+        font-size: 10px;
+        letter-spacing: 0.06em;
+        padding: 1px 5px;
+        border-radius: 6px;
+        color: #14181a;
+      }
+      .chip b {
+        font-variant-numeric: tabular-nums;
+        color: var(--accent);
+        margin-left: 2px;
+      }
+      .chip.cur {
+        border-color: var(--accent);
+        background: rgba(0, 0, 0, 0.45);
+      }
+      .chip.out {
+        opacity: 0.38;
+        text-decoration: line-through;
+      }
+      .hint {
+        flex: 1;
+        min-width: 0;
+        text-align: center;
+        font-family: var(--hand);
+        font-size: 20px;
+        line-height: 1.2;
+        color: var(--ink);
+        min-height: 1.2em;
+      }
+      .snd {
+        pointer-events: auto;
+        width: 44px;
+        height: 44px;
+        flex: none;
+        border-radius: 50%;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(0, 0, 0, 0.35);
+        color: var(--ink);
+        display: grid;
+        place-items: center;
+        padding: 0;
+        cursor: pointer;
+      }
+      .snd.off {
+        color: var(--dim);
+      }
+      .spacer {
+        width: 44px;
+        flex: none;
+      }
+      .sheet {
+        position: fixed;
+        inset: 0;
+        z-index: 5;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        background: rgba(20, 24, 24, 0.55);
+        padding-left: max(16px, env(safe-area-inset-left, 0px));
+        padding-right: max(16px, env(safe-area-inset-right, 0px));
+        padding-block: 16px;
+      }
+      [hidden] {
+        display: none !important;
+      }
+      .card {
+        width: 100%;
+        max-width: 380px;
+        max-height: 100%;
+        overflow: auto;
+        color: var(--pencil);
+        border-radius: 6px;
+        padding: 20px 18px 18px 44px;
+        box-shadow: 0 18px 40px rgba(0, 0, 0, 0.45);
+        transform: rotate(-0.8deg);
+        background:
+          linear-gradient(
+            90deg,
+            transparent 30px,
+            var(--margin) 30px,
+            var(--margin) 32px,
+            transparent 32px
+          ),
+          repeating-linear-gradient(transparent 0 27px, var(--rule) 27px 28px),
+          var(--paper);
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .card h1,
+      .card h2 {
+        font-family: var(--hand);
+        font-weight: 400;
+        margin: 0;
+        line-height: 1;
+        text-wrap: balance;
+      }
+      .card h1 {
+        font-size: 50px;
+      }
+      .card h2 {
+        font-size: 44px;
+      }
+      .card p {
+        margin: 0;
+        font-size: 15px;
+        line-height: 1.5;
+        max-width: 36ch;
+      }
+      .twists {
+        margin: 0;
+        padding-left: 18px;
+        font-size: 14px;
+        line-height: 1.5;
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+      }
+      .lbl {
+        font-size: 12px;
+        font-weight: 800;
+        letter-spacing: 0.14em;
+        text-transform: uppercase;
+        color: var(--muted);
+      }
+      .seg {
+        display: flex;
+        gap: 8px;
+      }
+      .seg button,
+      .slot button,
+      .btn {
+        font-family: var(--ui);
+        font-weight: 800;
+        font-size: 15px;
+        cursor: pointer;
+        border-radius: 10px;
+        border: 2px solid var(--pencil);
+        background: transparent;
+        color: var(--pencil);
+        padding: 8px 14px;
+      }
+      .seg button {
+        flex: 1;
+      }
+      .seg button[aria-pressed="true"] {
+        background: var(--pencil);
+        color: var(--paper);
+      }
+      .slots {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .slot {
+        display: grid;
+        grid-template-columns: auto 1fr;
+        gap: 4px 10px;
+        align-items: center;
+      }
+      .slot i {
+        width: 14px;
+        height: 14px;
+        border-radius: 50%;
+      }
+      .slot .nm {
+        font-family: var(--hand);
+        font-size: 22px;
+        line-height: 1;
+      }
+      .slot .opts {
+        grid-column: 1/-1;
+        display: flex;
+        gap: 8px;
+      }
+      .slot .opts button {
+        flex: 1;
+        padding: 6px 8px;
+        font-size: 14px;
+        min-width: 0;
+      }
+      .slot button.cpu {
+        border-style: dashed;
+      }
+      .slot small {
+        grid-column: 1/-1;
+        font-size: 12px;
+        color: var(--muted);
+      }
+      .btn.primary {
+        background: var(--go);
+        border-color: var(--go);
+        color: #fff;
+        font-size: 17px;
+        padding: 12px;
+      }
+      .tally {
+        display: flex;
+        flex-direction: column;
+        gap: 4px;
+        font-family: var(--hand);
+        font-size: 22px;
+      }
+      .tally div {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+      }
+      .tally i {
+        width: 12px;
+        height: 12px;
+        border-radius: 50%;
+      }
+      .tally span {
+        flex: 1;
+      }
+      .tally b {
+        font-variant-numeric: tabular-nums;
+      }
+      input {
+        -webkit-user-select: text;
+        user-select: text;
+      }
+      .pane {
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+      }
+      .field {
+        font-family: var(--hand);
+        font-size: 24px;
+        color: var(--pencil);
+        background: rgba(255, 255, 255, 0.65);
+        border: 2px solid var(--pencil);
+        border-radius: 10px;
+        padding: 4px 12px;
+        width: 100%;
+        box-sizing: border-box;
+        min-width: 0;
+      }
+      .codein {
+        text-transform: uppercase;
+        letter-spacing: 0.3em;
+        text-align: center;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        align-items: stretch;
+      }
+      .row > * {
+        min-width: 0;
+      }
+      .row .field {
+        flex: 1;
+      }
+      .status {
+        font-size: 14px;
+        color: #a23a2a;
+        min-height: 1.3em;
+      }
+      .code {
+        font-family: var(--hand);
+        font-size: 68px;
+        line-height: 1;
+        letter-spacing: 0.18em;
+        color: var(--pencil);
+      }
+      .sel {
+        -webkit-user-select: text;
+        user-select: text;
+        overflow-wrap: anywhere;
+      }
+      .slot button:disabled,
+      .btn:disabled {
+        opacity: 0.45;
+        cursor: default;
+      }
+      .chip u {
+        text-decoration: none;
+        font-size: 10px;
+        letter-spacing: 0.08em;
+        color: var(--accent);
+      }
+      button:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+      }
+      .back {
+        pointer-events: auto;
+        height: 44px;
+        flex: none;
+        padding: 0 16px 0 12px;
+        border-radius: 22px;
+        border: 1px solid rgba(255, 255, 255, 0.18);
+        background: rgba(0, 0, 0, 0.35);
+        color: var(--ink);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font: 800 14px/1 var(--ui);
+        text-decoration: none;
+      }
+      .back:hover {
+        background: rgba(0, 0, 0, 0.55);
+      }
+      .card-back {
+        align-self: center;
+        font-size: 14px;
+        font-weight: 800;
+        color: var(--muted);
+        text-underline-offset: 3px;
+      }
+      .card-back:hover {
+        color: var(--pencil);
+      }
+      .back:focus-visible,
+      .card-back:focus-visible {
+        outline: 3px solid var(--accent);
+        outline-offset: 2px;
+      }
+    </style>
+  </head>
+  <body>
+    <canvas id="c" aria-label="Desk with pens"></canvas>
 
-<canvas id="c" aria-label="Desk with pens"></canvas>
-
-<div class="bar top"><div class="chips" id="chips"></div></div>
-<div class="bar bottom" id="bottom"><a class="back" href="../index.html#games"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 18l-6-6 6-6"/></svg>Portfolio</a><div class="hint" id="hint"></div>
-  <button class="snd" id="snd" type="button" aria-label="Turn sound off"></button></div>
-
-<div class="sheet" id="setup">
-  <div class="card">
-    <h1>Pen Fight</h1>
-    <p>Take turns flicking your pen. Knock the others off the desk. If yours falls, you're out. Last pen standing wins.</p>
-    <ul class="twists">
-      <li>Without warning, an edge of the desk can crack off.</li>
-      <li>Slide over an ink blot to grab a power: Double flick, Heavy hit or Shield.</li>
-      <li>Smash the eraser, sharpener and coin around. Each has its own weight and bounce.</li>
-      <li>"Teacher's coming!" You get 3 seconds to flick or lose your turn.</li>
-    </ul>
-    <div class="lbl">Players</div>
-    <div class="seg" id="count">
-      <button type="button" id="n2" data-n="2">2</button><button type="button" id="n3" data-n="3">3</button><button type="button" id="n4" data-n="4">4</button>
+    <div class="bar top"><div class="chips" id="chips"></div></div>
+    <div class="bar bottom" id="bottom">
+      <a class="back" href="../index.html#games"
+        ><svg
+          viewBox="0 0 24 24"
+          width="18"
+          height="18"
+          fill="none"
+          stroke="currentColor"
+          stroke-width="2.4"
+          stroke-linecap="round"
+          stroke-linejoin="round"
+          aria-hidden="true"
+        >
+          <path d="M15 18l-6-6 6-6" /></svg
+        >Portfolio</a
+      >
+      <div class="hint" id="hint"></div>
+      <button
+        class="snd"
+        id="snd"
+        type="button"
+        aria-label="Turn sound off"
+      ></button>
     </div>
-    <div class="slots" id="slots"></div>
-    <p style="font-size:13px;color:var(--muted)">To flick, put your finger anywhere, drag back like a slingshot, and let go. Touch near the end of your pen to make it spin.</p>
-    <button class="btn primary" id="go" type="button">Start fight</button>
-    <a class="card-back" href="../index.html#games">Back to portfolio</a>
-  </div>
-</div>
 
-<div class="sheet" id="over" hidden>
-  <div class="card">
-    <div class="lbl">Round over</div>
-    <h2 id="winTitle">Blue wins!</h2>
-    <div class="tally" id="tally"></div>
-    <button class="btn primary" id="again" type="button">Rematch</button>
-    <button class="btn" id="change" type="button">Change players</button>
-    <a class="card-back" href="../index.html#games">Back to portfolio</a>
-  </div>
-</div>
+    <div class="sheet" id="setup">
+      <div class="card">
+        <h1>Pen Fight</h1>
+        <p>
+          Take turns flicking your pen. Knock the others off the desk. If yours
+          falls, you're out. Last pen standing wins.
+        </p>
+        <ul class="twists">
+          <li>Without warning, an edge of the desk can crack off.</li>
+          <li>
+            Slide over an ink blot to grab a power: Double flick, Heavy hit or
+            Shield.
+          </li>
+          <li>
+            Smash the eraser, sharpener and coin around. Each has its own weight
+            and bounce.
+          </li>
+          <li>
+            "Teacher's coming!" You get 3 seconds to flick or lose your turn.
+          </li>
+        </ul>
+        <div class="seg" id="mode">
+          <button type="button" id="mLocal" data-m="local">On this phone</button
+          ><button type="button" id="mOnline" data-m="online">Online</button>
+        </div>
+        <div class="pane" id="localPane">
+          <div class="lbl">Players</div>
+          <div class="seg" id="count">
+            <button type="button" id="n2" data-n="2">2</button
+            ><button type="button" id="n3" data-n="3">3</button
+            ><button type="button" id="n4" data-n="4">4</button>
+          </div>
+          <div class="slots" id="slots"></div>
+          <p style="font-size: 13px; color: var(--muted)">
+            To flick, put your finger anywhere, drag back like a slingshot, and
+            let go. Touch near the end of your pen to make it spin.
+          </p>
+          <button class="btn primary" id="go" type="button">Start fight</button>
+        </div>
+        <div class="pane" id="onlinePane" hidden>
+          <label class="lbl" for="nm">Your name</label>
+          <input
+            class="field"
+            id="nm"
+            maxlength="12"
+            autocomplete="nickname"
+            placeholder="Your name"
+          />
+          <button class="btn primary" id="hostBtn" type="button">
+            Host a desk
+          </button>
+          <div class="lbl">Or join a friend's desk</div>
+          <div class="row">
+            <input
+              class="field codein"
+              id="code"
+              maxlength="4"
+              autocomplete="off"
+              autocapitalize="characters"
+              spellcheck="false"
+              placeholder="CODE"
+              aria-label="Desk code"
+            /><button class="btn" id="joinBtn" type="button">Join</button>
+          </div>
+          <p class="status" id="netStatus" role="status"></p>
+          <p style="font-size: 13px; color: var(--muted)">
+            Each friend plays on their own phone. The host's phone runs the
+            desk, so the host should keep Pen Fight open on screen.
+          </p>
+        </div>
+        <a class="card-back" href="../index.html#games">Back to portfolio</a>
+      </div>
+    </div>
 
-<script>if(window.self!==window.top)document.querySelectorAll('.back,.card-back').forEach(a=>a.hidden=true);</script>
-<script>
-(()=>{
-const $=id=>document.getElementById(id);
-const cv=$('c'),ctx=cv.getContext('2d');
-const TW=120,TH=168,TAU=Math.PI*2;
-const PENS=[
-  {name:'Blue',base:'#2457d6',light:'#7a9ef4',dark:'#14378f'},
-  {name:'Red',base:'#d8323c',light:'#f3868b',dark:'#8c1820'},
-  {name:'Black',base:'#2d2d36',light:'#74747f',dark:'#111115'},
-  {name:'Green',base:'#1e9e5a',light:'#69d69b',dark:'#0f6437'}];
-const TYPES={
-  ballpoint:{label:'Ballpoint',hl:12,r:1.9,m:1,spd:1,desc:'Ballpoint: balanced all-rounder'},
-  marker:{label:'Marker',hl:10,r:2.8,m:2.1,spd:.8,desc:'Marker: heavy and hard to push, but slower'},
-  pencil:{label:'Pencil',hl:12.5,r:1.5,m:.6,spd:1.2,desc:'Pencil: light and fast, but easy to knock away'},
-  long:{label:'Long pen',hl:15.5,r:1.7,m:1.2,spd:.95,desc:'Long pen: wide reach for big sweeping hits'}};
-const TYPE_KEYS=Object.keys(TYPES);
-const POWERS={
-  double:{tag:'×2',label:'Double flick',col:'#7fd3ff'},
-  heavy:{tag:'HEAVY',label:'Heavy hit',col:'#ffa94d'},
-  shield:{tag:'SHIELD',label:'Shield',col:'#8fe58f'}};
-const SPEED=195,MAXPULL=34,REST=.55;
-const clamp=(v,a,b)=>v<a?a:v>b?b:v;
+    <div class="sheet" id="over" hidden>
+      <div class="card">
+        <div class="lbl">Round over</div>
+        <h2 id="winTitle">Blue wins!</h2>
+        <div class="tally" id="tally"></div>
+        <button class="btn primary" id="again" type="button">Rematch</button>
+        <button class="btn" id="change" type="button">Change players</button>
+        <p id="overNote" hidden></p>
+        <button class="btn" id="leave" type="button" hidden>Leave desk</button>
+        <a class="card-back" href="../index.html#games">Back to portfolio</a>
+      </div>
+    </div>
 
-const store={get(k,d){try{const v=localStorage.getItem('penfight_'+k);return v==null?d:v}catch(e){return d}},
-  set(k,v){try{localStorage.setItem('penfight_'+k,v)}catch(e){}}};
-let count=+store.get('count',2)||2;
-let types=(store.get('types','human,cpu,cpu,cpu')+'').split(',');
-let kinds=(store.get('kinds','ballpoint,ballpoint,ballpoint,ballpoint')+'').split(',').map(k=>TYPES[k]?k:'ballpoint');
-let muted=store.get('muted','0')==='1';
-let wins=[0,0,0,0],rounds=0;
+    <div class="sheet" id="lobby" hidden>
+      <div class="card">
+        <div class="lbl">Desk code</div>
+        <div class="code" id="lobCode">----</div>
+        <button class="btn" id="invite" type="button">Invite friends</button>
+        <p id="lobHelp" class="sel"></p>
+        <div class="slots" id="lobSeats"></div>
+        <button class="btn primary" id="lobStart" type="button">
+          Start fight
+        </button>
+        <p id="lobWait" hidden>Waiting for the host to start the fight…</p>
+        <button class="btn" id="lobLeave" type="button">Leave desk</button>
+      </div>
+    </div>
 
-// ---------- sound ----------
-let ac=null,master=null,nb=null;
-function initAudio(){if(!ac){try{ac=new (window.AudioContext||window.webkitAudioContext)();master=ac.createGain();master.gain.value=muted?0:.9;
-  const comp=ac.createDynamicsCompressor();master.connect(comp).connect(ac.destination);
-  const len=ac.sampleRate*.5;nb=ac.createBuffer(1,len,ac.sampleRate);const ch=nb.getChannelData(0);for(let i=0;i<len;i++)ch[i]=Math.random()*2-1;}catch(e){}}
-  if(ac&&ac.state==='suspended')ac.resume();}
-function tone(f,d,type,v,when=0,to=0){if(!ac||muted)return;const t=ac.currentTime+when,o=ac.createOscillator(),g=ac.createGain();
-  o.type=type;o.frequency.setValueAtTime(f,t);if(to)o.frequency.exponentialRampToValueAtTime(to,t+d);
-  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.005);g.gain.exponentialRampToValueAtTime(.0001,t+d);
-  o.connect(g).connect(master);o.start(t);o.stop(t+d+.03);}
-function noise(d,v,f,type='bandpass',when=0,to=0){if(!ac||muted||!nb)return;const t=ac.currentTime+when,s=ac.createBufferSource(),fl=ac.createBiquadFilter(),g=ac.createGain();
-  s.buffer=nb;s.loop=true;fl.type=type;fl.frequency.setValueAtTime(f,t);if(to)fl.frequency.exponentialRampToValueAtTime(to,t+d);
-  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+.004);g.gain.exponentialRampToValueAtTime(.0001,t+d);
-  s.connect(fl).connect(g).connect(master);s.start(t);s.stop(t+d+.03);}
-let lastClack=0;
-const sfx={
-  clack(imp,heavy){const now=performance.now();if(now-lastClack<40)return;lastClack=now;const v=clamp(imp/120,.05,.5);
-    noise(.05,v,2600+Math.random()*1200);tone(1500+Math.random()*500,.04,'square',v*.25);
-    if(heavy){tone(110,.25,'sine',.4,0,50);noise(.15,.3,500,'lowpass')}},
-  thunk(imp){const now=performance.now();if(now-lastClack<40)return;lastClack=now;const v=clamp(imp/120,.05,.45);
-    noise(.07,v,700,'bandpass');tone(260,.06,'triangle',v*.4);},
-  flick(p){noise(.09,.35,1800,'bandpass',0,600);tone(320,.06,'triangle',.18);noise(.25,.08*p+.03,600,'bandpass',.03,2800);},
-  fall(){tone(600,.45,'triangle',.18,0,90);noise(.12,.3,900,'lowpass',.42);tone(90,.18,'sine',.35,.42);noise(.08,.15,3000,'bandpass',.52);},
-  turn(){tone(660,.08,'sine',.1);tone(880,.12,'sine',.08,.06);},
-  win(){[0,4,7,12,16,19].forEach((s,i)=>tone(392*Math.pow(2,s/12),i===5?.6:.15,'square',.06,i*.09));},
-  crack(){for(let i=0;i<6;i++)noise(.08+Math.random()*.1,.25,300+Math.random()*1500,'bandpass',i*.07);tone(70,.5,'sine',.3,0,40);},
-  power(){[0,4,7,12,16].forEach((s,i)=>tone(784*Math.pow(2,s/12),.18,'sine',.12,i*.05));noise(.4,.05,6000,'highpass',.05);},
-  shield(){tone(300,.25,'sine',.25,0,900);tone(450,.3,'triangle',.1,.05,1300);},
-  obj(kind,imp){const now=performance.now();if(now-lastClack<40)return;lastClack=now;const v=clamp(imp/120,.05,.5);
-    if(kind==='eraser'){noise(.08,v,500,'lowpass');tone(140,.07,'sine',v*.6)}
-    else if(kind==='sharpener'){noise(.04,v,5000);tone(2300,.12,'square',v*.15);tone(3400,.18,'sine',v*.2)}
-    else{tone(3100,.5,'sine',v*.35);tone(4650,.35,'sine',v*.2);tone(6200,.2,'sine',v*.1);noise(.03,v*.6,7000,'highpass')}},
-  objFall(){noise(.06,.2,2500,'bandpass',.35);tone(1400,.08,'triangle',.1,.38);},
-  step(){noise(.09,.35,180,'lowpass');tone(60,.1,'sine',.3);},
-  alarm(){tone(880,.15,'square',.08);tone(660,.15,'square',.08,.17);},
-  skip(){tone(200,.35,'sawtooth',.12,0,110);}
-};
-const SVG_ON='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
-const SVG_OFF='<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
-const snd=$('snd');
-function drawSnd(){snd.innerHTML=muted?SVG_OFF:SVG_ON;snd.classList.toggle('off',muted);snd.setAttribute('aria-label',muted?'Turn sound on':'Turn sound off')}
-drawSnd();
-snd.addEventListener('click',()=>{initAudio();muted=!muted;store.set('muted',muted?'1':'0');
-  if(master)master.gain.setTargetAtTime(muted?0:.9,ac.currentTime,.02);drawSnd();if(!muted)sfx.turn();});
+    <script>
+      if (window.self !== window.top)
+        document
+          .querySelectorAll(".back, .card-back")
+          .forEach((a) => (a.hidden = true));
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/peerjs@1.5.4/dist/peerjs.min.js"></script>
+    <script>
+      (() => {
+        const $ = (id) => document.getElementById(id);
+        const cv = $("c"),
+          ctx = cv.getContext("2d");
+        const TW = 120,
+          TH = 168,
+          TAU = Math.PI * 2;
+        const PENS = [
+          { name: "Blue", base: "#2457d6", light: "#7a9ef4", dark: "#14378f" },
+          { name: "Red", base: "#d8323c", light: "#f3868b", dark: "#8c1820" },
+          { name: "Black", base: "#2d2d36", light: "#74747f", dark: "#111115" },
+          { name: "Green", base: "#1e9e5a", light: "#69d69b", dark: "#0f6437" },
+        ];
+        const TYPES = {
+          ballpoint: {
+            label: "Ballpoint",
+            hl: 12,
+            r: 1.9,
+            m: 1,
+            spd: 1,
+            desc: "Ballpoint: balanced all-rounder",
+          },
+          marker: {
+            label: "Marker",
+            hl: 10,
+            r: 2.8,
+            m: 2.1,
+            spd: 0.8,
+            desc: "Marker: heavy and hard to push, but slower",
+          },
+          pencil: {
+            label: "Pencil",
+            hl: 12.5,
+            r: 1.5,
+            m: 0.6,
+            spd: 1.2,
+            desc: "Pencil: light and fast, but easy to knock away",
+          },
+          long: {
+            label: "Long pen",
+            hl: 15.5,
+            r: 1.7,
+            m: 1.2,
+            spd: 0.95,
+            desc: "Long pen: wide reach for big sweeping hits",
+          },
+        };
+        const TYPE_KEYS = Object.keys(TYPES);
+        const POWERS = {
+          double: { tag: "×2", label: "Double flick", col: "#7fd3ff" },
+          heavy: { tag: "HEAVY", label: "Heavy hit", col: "#ffa94d" },
+          shield: { tag: "SHIELD", label: "Shield", col: "#8fe58f" },
+        };
+        const SPEED = 195,
+          MAXPULL = 34,
+          REST = 0.55;
+        const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
-// ---------- layout + desk texture ----------
-let W,H,DPR,S,ox,oy,wood=null;
-function layout(){
-  DPR=Math.min(devicePixelRatio||1,2.5);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;
-  const topH=document.querySelector('.top').getBoundingClientRect().bottom+10;
-  const botH=H-$('bottom').getBoundingClientRect().top+10;
-  const aw=W-28,ah=Math.max(120,H-topH-botH);
-  S=Math.min(aw/TW,ah/TH);ox=(W-TW*S)/2;oy=topH+(ah-TH*S)/2;buildWood();
-}
-function rng(seed){return()=>{seed=(seed*16807)%2147483647;return seed/2147483647}}
-function buildWood(){
-  const w=TW*S,h=TH*S;wood=document.createElement('canvas');wood.width=Math.ceil(w*DPR);wood.height=Math.ceil(h*DPR);
-  const g=wood.getContext('2d');g.scale(DPR,DPR);const r=rng(7);
-  const base=g.createLinearGradient(0,0,w,h);base.addColorStop(0,'#c98f57');base.addColorStop(.5,'#b97c45');base.addColorStop(1,'#a96d3a');
-  g.fillStyle=base;g.fillRect(0,0,w,h);
-  const planks=4;for(let p=0;p<planks;p++){const px=p*w/planks;
-    g.fillStyle=`rgba(${p%2?'60,30,10':'255,220,170'},${.04+r()*.04})`;g.fillRect(px,0,w/planks,h);
-    for(let k=0;k<18;k++){const x0=px+r()*w/planks,amp=2+r()*5,f=.01+r()*.02,ph=r()*9;
-      g.strokeStyle=`rgba(80,40,15,${.06+r()*.14})`;g.lineWidth=.6+r()*1.4;g.beginPath();
-      for(let y=0;y<=h;y+=6){const x=x0+Math.sin(y*f+ph)*amp+Math.sin(y*.003+ph)*amp*2;y?g.lineTo(x,y):g.moveTo(x,y)}g.stroke()}
-    if(p){g.strokeStyle='rgba(50,25,8,.45)';g.lineWidth=1.5;g.beginPath();g.moveTo(px,0);g.lineTo(px,h);g.stroke()}}
-  for(let k=0;k<3;k++){const kx=r()*w,ky=r()*h;g.strokeStyle='rgba(70,35,12,.35)';
-    for(let j=1;j<5;j++){g.lineWidth=1;g.beginPath();g.ellipse(kx,ky,j*3,j*7,0,0,TAU);g.stroke()}}
-  g.save();g.translate(w*.62,h*.6);g.rotate(-.18);g.font=`${Math.round(S*5)}px "Patrick Hand", cursive`;
-  g.fillStyle='rgba(60,28,8,.25)';g.fillText('7B ♥',0,0);g.restore();
-  g.strokeStyle='rgba(255,235,200,.12)';g.lineWidth=1;for(let k=0;k<14;k++){const x=r()*w,y=r()*h,l=8+r()*30,a=r()*TAU;
-    g.beginPath();g.moveTo(x,y);g.lineTo(x+Math.cos(a)*l,y+Math.sin(a)*l);g.stroke()}
-  g.strokeStyle='rgba(40,18,4,.55)';g.lineWidth=6;g.strokeRect(3,3,w-6,h-6);
-  g.strokeStyle='rgba(255,225,180,.25)';g.lineWidth=1.5;g.strokeRect(7,7,w-14,h-14);
-}
-addEventListener('resize',layout);
+        const store = {
+          get(k, d) {
+            try {
+              const v = localStorage.getItem("penfight_" + k);
+              return v == null ? d : v;
+            } catch (e) {
+              return d;
+            }
+          },
+          set(k, v) {
+            try {
+              localStorage.setItem("penfight_" + k, v);
+            } catch (e) {}
+          },
+        };
+        let count = +store.get("count", 2) || 2;
+        let types = (store.get("types", "human,cpu,cpu,cpu") + "").split(",");
+        let kinds = (
+          store.get("kinds", "ballpoint,ballpoint,ballpoint,ballpoint") + ""
+        )
+          .split(",")
+          .map((k) => (TYPES[k] ? k : "ballpoint"));
+        let muted = store.get("muted", "0") === "1";
+        let wins = [0, 0, 0, 0],
+          rounds = 0;
+        const NET0 = () => ({
+          mode: "local",
+          peer: null,
+          conns: {},
+          host: null,
+          code: "",
+          mySeat: 0,
+          seats: [],
+          owners: [],
+          ev: [],
+          baseHint: "",
+          shownHint: null,
+          remoteAim: null,
+          aim: null,
+          sent: false,
+          sentAt: 0,
+          lastSnap: 0,
+          lastAimSend: 0,
+          blotSeq: 0,
+          blotSig: null,
+          chipSig: "",
+          seen: {},
+          lastHeard: performance.now(),
+        });
+        let NET = NET0();
+        function play(n, ...a) {
+          sfx[n](...a);
+          if (NET.mode === "host") NET.ev.push(["s", n, a]);
+        }
+        const esc = (t) =>
+          String(t).replace(
+            /[&<>"']/g,
+            (c) =>
+              ({
+                "&": "&amp;",
+                "<": "&lt;",
+                ">": "&gt;",
+                '"': "&quot;",
+                "'": "&#39;",
+              })[c],
+          );
 
-// ---------- game state ----------
-let pens=[],obst=[],blots=[],chips=[],cur=0,phase='setup',shotAt=0,drag=null,aiAnim=null,gameId=0,pulse=0,lastT=0;
-let B={x0:0,y0:0,x1:TW,y1:TH},Bfrom=null,Bto=null,shrinkT=0,deskRound=0,jag=null,shake=0;
-let teacher=null,lastTeacher=false,banner=null,turnsSinceCrack=0;
-function placePens(n){
-  pens=[];for(let i=0;i<n;i++){const ang=Math.PI/2+i*TAU/n,T=TYPES[kinds[i]];
-    pens.push({i,x:TW/2+Math.cos(ang)*TW*.28,y:TH/2+Math.sin(ang)*TH*.29,a:ang+Math.PI/2+(Math.random()-.5)*.7,
-      vx:0,vy:0,w:0,rest:.55,fr:1.5,dec:12,afr:3,hl:T.hl,r:T.r,m:T.m,spd:T.spd,type:kinds[i],alive:true,fall:-1,
-      human:types[i]==='human',double:false,heavy:false,heavyOn:false,shield:false,...PENS[i]})}
-}
-function seg(p){const c=Math.cos(p.a)*p.hl,s=Math.sin(p.a)*p.hl;return[p.x-c,p.y-s,p.x+c,p.y+s]}
-function distToPens(x,y,pad){for(const p of pens){if(!p.alive)continue;const s=seg(p);const [ , , cx,cy]=closest(s,[x,y,x,y]);
-  const [ax,ay]=closest(s,[x,y,x,y]);if(Math.hypot(ax-x,ay-y)<p.r+pad)return false}return true}
-function freeSpot(pad,margin){
-  for(let k=0;k<80;k++){const x=B.x0+margin+Math.random()*(B.x1-B.x0-2*margin),y=B.y0+margin+Math.random()*(B.y1-B.y0-2*margin);
-    if(!distToPens(x,y,pad))continue;if(obst.some(o=>!o.gone&&Math.hypot(o.x-x,o.y-y)<o.hl+o.r+pad))continue;
-    if(blots.some(b=>Math.hypot(b.x-x,b.y-y)<b.r*2+4))continue;return[x,y]}
-  return null;
-}
-function placeObstacles(){
-  obst=[];
-  const defs=[{kind:'eraser',hl:3.4,r:3,m:1.5,rest:.2,fr:3.2,dec:30,afr:5},{kind:'sharpener',hl:1,r:2.6,m:2.4,rest:.5,fr:2.4,dec:20,afr:4},{kind:'coin',hl:0,r:2.9,m:.7,rest:.75,fr:1,dec:7,afr:2}];
-  for(const d of defs){const s=freeSpot(d.hl+d.r+5,16);if(s)obst.push({...d,x:s[0],y:s[1],a:Math.random()*Math.PI,vx:0,vy:0,w:0,gone:false,fade:1})}
-}
-function spawnBlot(){
-  if(blots.length>=2)return;const s=freeSpot(6,9);if(!s)return;
-  const pts=[];const n=14;for(let k=0;k<n;k++)pts.push(.75+Math.random()*.45);
-  const drops=[];for(let k=0;k<4;k++){const a=Math.random()*TAU;drops.push([Math.cos(a)*(1.6+Math.random()*.6),Math.sin(a)*(1.6+Math.random()*.6),.15+Math.random()*.2])}
-  blots.push({x:s[0],y:s[1],r:3.4,pts,drops,born:performance.now()});
-}
-function makeJag(){const N=16,mk=()=>Array.from({length:N+1},(_,k)=>k===0||k===N?0:Math.random()*1.6);jag={N,t:mk(),r:mk(),b:mk(),l:mk()}}
-function hint(t){$('hint').textContent=t}
-function renderChips(){
-  $('chips').innerHTML=phase==='setup'?'':pens.map(p=>{
-    const tags=['double','heavy','shield'].filter(k=>p[k]).map(k=>`<em style="background:${POWERS[k].col}">${POWERS[k].tag}</em>`).join('');
-    return `<div class="chip${p.i===cur&&phase!=='over'?' cur':''}${p.alive?'':' out'}"><i style="background:${p.light}"></i>${p.name}${p.human?'':' <small>CPU</small>'}${tags}<b>${wins[p.i]}</b></div>`}).join('');
-}
-function newGame(){
-  gameId++;B={x0:0,y0:0,x1:TW,y1:TH};deskRound=0;turnsSinceCrack=0;makeJag();blots=[];chips=[];teacher=null;lastTeacher=false;banner=null;
-  placePens(count);placeObstacles();spawnBlot();
-  cur=rounds%count;rounds++;drag=null;aiAnim=null;
-  $('setup').hidden=true;$('over').hidden=true;renderChips();layout();beginTurn(false);
-}
-function beginTurn(extra){
-  const p=pens[cur];drag=null;phase=p.human?'aim':'cpu';sfx.turn();
-  if(p.human){
-    phase='aim';
-    const canTeacher=!extra&&deskRound>=1&&!lastTeacher&&Math.random()<.22;
-    if(canTeacher){teacher={t:3,lastSec:4};lastTeacher=true;hint(`Teacher's coming! ${p.name}, flick fast!`);sfx.alarm()}
-    else{lastTeacher=false;hint(extra?`Double flick! ${p.name} goes again.`:`${p.name}'s turn. Drag back and let go.`)}
-    renderChips();
-  }else{phase='cpu';lastTeacher=false;hint(extra?`Double flick! ${p.name} goes again.`:`${p.name} is aiming…`);renderChips();const id=gameId;setTimeout(()=>aiPlay(id),650)}
-}
-function nextAlive(from){let j=from;do{j=(j+1)%pens.length}while(!pens[j].alive);return j}
-function endTurn(skipped){
-  teacher=null;pens.forEach(p=>p.heavyOn=false);
-  const alive=pens.filter(p=>p.alive);
-  if(alive.length<=1){finish(alive[0]);return}
-  const me=pens[cur];
-  if(!skipped&&me.alive&&me.double){me.double=false;showBanner('DOUBLE FLICK',POWERS.double.col);beginTurn(true);return}
-  const j=nextAlive(cur);const wrapped=j<=cur;cur=j;turnsSinceCrack++;
-  if(wrapped){deskRound++;spawnBlot()}
-  const chance=turnsSinceCrack<2?0:Math.min(.6,.06+.07*(turnsSinceCrack-1));
-  if(Math.random()<chance&&startShrink()){turnsSinceCrack=0;return}
-  beginTurn(false);
-}
-function startShrink(){
-  const minW=TW*.42,minH=TH*.42,w=B.x1-B.x0,h=B.y1-B.y0,sides=[];
-  if(w>minW+4)sides.push('x0','x1');if(h>minH+4)sides.push('y0','y1');if(!sides.length)return false;
-  const pick=[sides[Math.floor(Math.random()*sides.length)]];
-  if(Math.random()<.3){const o=sides.filter(q=>q!==pick[0]);pick.push(o[Math.floor(Math.random()*o.length)])}
-  Bfrom={...B};Bto={...B};
-  for(const sd of pick){const isX=sd[0]==='x',share=pick.filter(q=>q[0]===sd[0]).length;
-    const a=Math.min(6+Math.random()*7,((isX?w-minW:h-minH))/share);Bto[sd]+=sd.endsWith('0')?a:-a}
-  shrinkT=0;phase='shrink';
-  const NAMES={x0:'left',x1:'right',y0:'top',y1:'bottom'};
-  hint(`Crack! The ${pick.map(q=>NAMES[q]).join(' and ')} edge${pick.length>1?'s':''} broke off!`);sfx.crack();shake=10;showBanner('THE DESK CRACKS','#f2b134');
-  return true;
-}
-function afterShrink(){
-  const alive=pens.filter(p=>p.alive);
-  if(alive.length<=1){finish(alive[0]);return}
-  if(!pens[cur].alive)cur=nextAlive(cur);
-  beginTurn(false);
-}
-function finish(w){
-  phase='over';teacher=null;renderChips();
-  if(w){wins[w.i]++;hint(`${w.name} rules the desk!`);sfx.win()}else hint('Everyone fell off!');
-  $('winTitle').textContent=w?`${w.name} wins!`:"It's a draw!";
-  $('tally').innerHTML=pens.map(p=>`<div><i style="background:${p.base}"></i><span>${p.name} · ${TYPES[p.type].label}${p.human?'':' (CPU)'}</span><b>${wins[p.i]}</b></div>`).join('');
-  const id=gameId;setTimeout(()=>{if(id===gameId&&phase==='over')$('over').hidden=false},900);
-}
-function showBanner(txt,col){banner={txt,col,t:0}}
-function shoot(p,anchor,dir,power){
-  const sp=SPEED*power*p.spd;p.vx+=dir[0]*sp;p.vy+=dir[1]*sp;
-  const rx=anchor[0]-p.x,ry=anchor[1]-p.y;p.w+=(rx*dir[1]-ry*dir[0])*sp/(p.hl*p.hl/3+p.r*p.r/2)*.55;
-  if(p.heavy){p.heavy=false;p.heavyOn=true;renderChips()}
-  teacher=null;phase='moving';shotAt=performance.now();hint('');sfx.flick(power);
-}
-function aiPlay(id){
-  if(id!==gameId||phase!=='cpu')return;const me=pens[cur];
-  let t=null,bs=1e9;for(const o of pens){if(!o.alive||o===me)continue;
-    const d=Math.hypot(o.x-me.x,o.y-me.y),edge=Math.min(o.x-B.x0,B.x1-o.x,o.y-B.y0,B.y1-o.y);
-    const s=d+edge*1.4+Math.random()*12;if(s<bs){bs=s;t=o}}
-  // sometimes go for a nearby ink blot instead
-  const blot=blots.find(b=>Math.hypot(b.x-me.x,b.y-me.y)<28);
-  let tx=t.x,ty=t.y,soft=false;if(blot&&Math.random()<.35){tx=blot.x;ty=blot.y;soft=true}
-  const d=Math.hypot(tx-me.x,ty-me.y);
-  const err=(Math.random()+Math.random()+Math.random()-1.5)*.16;
-  const ang=Math.atan2(ty-me.y,tx-me.x)+err;
-  const need=soft?d*1.5+8:d*1.45+55;
-  const power=clamp(need/(SPEED*me.spd)*(.88+Math.random()*.25),.2,1);
-  const ax=Math.cos(me.a),ay=Math.sin(me.a),off=(Math.random()-.5)*me.hl*.7;
-  aiAnim={anchor:[me.x+ax*off,me.y+ay*off],dir:[Math.cos(ang),Math.sin(ang)],power,t:0,id};
-}
+        // ---------- sound ----------
+        let ac = null,
+          master = null,
+          nb = null;
+        function initAudio() {
+          if (!ac) {
+            try {
+              ac = new (window.AudioContext || window.webkitAudioContext)();
+              master = ac.createGain();
+              master.gain.value = muted ? 0 : 0.9;
+              const comp = ac.createDynamicsCompressor();
+              master.connect(comp).connect(ac.destination);
+              const len = ac.sampleRate * 0.5;
+              nb = ac.createBuffer(1, len, ac.sampleRate);
+              const ch = nb.getChannelData(0);
+              for (let i = 0; i < len; i++) ch[i] = Math.random() * 2 - 1;
+            } catch (e) {}
+          }
+          if (ac && ac.state === "suspended") ac.resume();
+        }
+        function tone(f, d, type, v, when = 0, to = 0) {
+          if (!ac || muted) return;
+          const t = ac.currentTime + when,
+            o = ac.createOscillator(),
+            g = ac.createGain();
+          o.type = type;
+          o.frequency.setValueAtTime(f, t);
+          if (to) o.frequency.exponentialRampToValueAtTime(to, t + d);
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(v, t + 0.005);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+          o.connect(g).connect(master);
+          o.start(t);
+          o.stop(t + d + 0.03);
+        }
+        function noise(d, v, f, type = "bandpass", when = 0, to = 0) {
+          if (!ac || muted || !nb) return;
+          const t = ac.currentTime + when,
+            s = ac.createBufferSource(),
+            fl = ac.createBiquadFilter(),
+            g = ac.createGain();
+          s.buffer = nb;
+          s.loop = true;
+          fl.type = type;
+          fl.frequency.setValueAtTime(f, t);
+          if (to) fl.frequency.exponentialRampToValueAtTime(to, t + d);
+          g.gain.setValueAtTime(0.0001, t);
+          g.gain.exponentialRampToValueAtTime(v, t + 0.004);
+          g.gain.exponentialRampToValueAtTime(0.0001, t + d);
+          s.connect(fl).connect(g).connect(master);
+          s.start(t);
+          s.stop(t + d + 0.03);
+        }
+        let lastClack = 0;
+        const sfx = {
+          clack(imp, heavy) {
+            const now = performance.now();
+            if (now - lastClack < 40) return;
+            lastClack = now;
+            const v = clamp(imp / 120, 0.05, 0.5);
+            noise(0.05, v, 2600 + Math.random() * 1200);
+            tone(1500 + Math.random() * 500, 0.04, "square", v * 0.25);
+            if (heavy) {
+              tone(110, 0.25, "sine", 0.4, 0, 50);
+              noise(0.15, 0.3, 500, "lowpass");
+            }
+          },
+          thunk(imp) {
+            const now = performance.now();
+            if (now - lastClack < 40) return;
+            lastClack = now;
+            const v = clamp(imp / 120, 0.05, 0.45);
+            noise(0.07, v, 700, "bandpass");
+            tone(260, 0.06, "triangle", v * 0.4);
+          },
+          flick(p) {
+            noise(0.09, 0.35, 1800, "bandpass", 0, 600);
+            tone(320, 0.06, "triangle", 0.18);
+            noise(0.25, 0.08 * p + 0.03, 600, "bandpass", 0.03, 2800);
+          },
+          fall() {
+            tone(600, 0.45, "triangle", 0.18, 0, 90);
+            noise(0.12, 0.3, 900, "lowpass", 0.42);
+            tone(90, 0.18, "sine", 0.35, 0.42);
+            noise(0.08, 0.15, 3000, "bandpass", 0.52);
+          },
+          turn() {
+            tone(660, 0.08, "sine", 0.1);
+            tone(880, 0.12, "sine", 0.08, 0.06);
+          },
+          win() {
+            [0, 4, 7, 12, 16, 19].forEach((s, i) =>
+              tone(
+                392 * Math.pow(2, s / 12),
+                i === 5 ? 0.6 : 0.15,
+                "square",
+                0.06,
+                i * 0.09,
+              ),
+            );
+          },
+          crack() {
+            for (let i = 0; i < 6; i++)
+              noise(
+                0.08 + Math.random() * 0.1,
+                0.25,
+                300 + Math.random() * 1500,
+                "bandpass",
+                i * 0.07,
+              );
+            tone(70, 0.5, "sine", 0.3, 0, 40);
+          },
+          power() {
+            [0, 4, 7, 12, 16].forEach((s, i) =>
+              tone(784 * Math.pow(2, s / 12), 0.18, "sine", 0.12, i * 0.05),
+            );
+            noise(0.4, 0.05, 6000, "highpass", 0.05);
+          },
+          shield() {
+            tone(300, 0.25, "sine", 0.25, 0, 900);
+            tone(450, 0.3, "triangle", 0.1, 0.05, 1300);
+          },
+          obj(kind, imp) {
+            const now = performance.now();
+            if (now - lastClack < 40) return;
+            lastClack = now;
+            const v = clamp(imp / 120, 0.05, 0.5);
+            if (kind === "eraser") {
+              noise(0.08, v, 500, "lowpass");
+              tone(140, 0.07, "sine", v * 0.6);
+            } else if (kind === "sharpener") {
+              noise(0.04, v, 5000);
+              tone(2300, 0.12, "square", v * 0.15);
+              tone(3400, 0.18, "sine", v * 0.2);
+            } else {
+              tone(3100, 0.5, "sine", v * 0.35);
+              tone(4650, 0.35, "sine", v * 0.2);
+              tone(6200, 0.2, "sine", v * 0.1);
+              noise(0.03, v * 0.6, 7000, "highpass");
+            }
+          },
+          objFall() {
+            noise(0.06, 0.2, 2500, "bandpass", 0.35);
+            tone(1400, 0.08, "triangle", 0.1, 0.38);
+          },
+          step() {
+            noise(0.09, 0.35, 180, "lowpass");
+            tone(60, 0.1, "sine", 0.3);
+          },
+          alarm() {
+            tone(880, 0.15, "square", 0.08);
+            tone(660, 0.15, "square", 0.08, 0.17);
+          },
+          skip() {
+            tone(200, 0.35, "sawtooth", 0.12, 0, 110);
+          },
+        };
+        const SVG_ON =
+          '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M16.5 8.5a5 5 0 0 1 0 7M19 6a8.5 8.5 0 0 1 0 12"/></svg>';
+        const SVG_OFF =
+          '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 9v6h4l5 4V5L8 9z" fill="currentColor"/><path d="M17 9l5 6M22 9l-5 6"/></svg>';
+        const snd = $("snd");
+        function drawSnd() {
+          snd.innerHTML = muted ? SVG_OFF : SVG_ON;
+          snd.classList.toggle("off", muted);
+          snd.setAttribute(
+            "aria-label",
+            muted ? "Turn sound on" : "Turn sound off",
+          );
+        }
+        drawSnd();
+        snd.addEventListener("click", () => {
+          initAudio();
+          muted = !muted;
+          store.set("muted", muted ? "1" : "0");
+          if (master)
+            master.gain.setTargetAtTime(muted ? 0 : 0.9, ac.currentTime, 0.02);
+          drawSnd();
+          if (!muted) play("turn");
+        });
 
-// ---------- input ----------
-function toWorld(e){return[(e.clientX-ox)/S,(e.clientY-oy)/S]}
-cv.addEventListener('pointerdown',e=>{
-  initAudio();if(phase!=='aim')return;const p=pens[cur];const [wx,wy]=toWorld(e);
-  const ax=Math.cos(p.a),ay=Math.sin(p.a);const s=clamp((wx-p.x)*ax+(wy-p.y)*ay,-p.hl,p.hl);
-  const px=p.x+ax*s,py=p.y+ay*s;const near=Math.hypot(wx-px,wy-py)<p.r+7;
-  drag={anchor:near?[px,py]:[p.x,p.y],start:[wx,wy],pt:[wx,wy],id:e.pointerId};
-  try{cv.setPointerCapture(e.pointerId)}catch(_){}
-});
-cv.addEventListener('pointermove',e=>{if(drag&&e.pointerId===drag.id)drag.pt=toWorld(e)});
-cv.addEventListener('pointerup',e=>{
-  if(!drag||e.pointerId!==drag.id)return;const dx=drag.start[0]-drag.pt[0],dy=drag.start[1]-drag.pt[1],len=Math.hypot(dx,dy);
-  const power=Math.min(len/MAXPULL,1),a=drag.anchor;drag=null;
-  if(power<.08||phase!=='aim')return;shoot(pens[cur],a,[dx/len,dy/len],power);
-});
-cv.addEventListener('pointercancel',()=>{drag=null});
+        // ---------- layout + desk texture ----------
+        let W,
+          H,
+          DPR,
+          S,
+          ox,
+          oy,
+          wood = null;
+        function layout() {
+          DPR = Math.min(devicePixelRatio || 1, 2.5);
+          W = innerWidth;
+          H = innerHeight;
+          cv.width = W * DPR;
+          cv.height = H * DPR;
+          const topH =
+            document.querySelector(".top").getBoundingClientRect().bottom + 10;
+          const botH = H - $("bottom").getBoundingClientRect().top + 10;
+          const aw = W - 28,
+            ah = Math.max(120, H - topH - botH);
+          S = Math.min(aw / TW, ah / TH);
+          ox = (W - TW * S) / 2;
+          oy = topH + (ah - TH * S) / 2;
+          buildWood();
+        }
+        function rng(seed) {
+          return () => {
+            seed = (seed * 16807) % 2147483647;
+            return seed / 2147483647;
+          };
+        }
+        function buildWood() {
+          const w = TW * S,
+            h = TH * S;
+          wood = document.createElement("canvas");
+          wood.width = Math.ceil(w * DPR);
+          wood.height = Math.ceil(h * DPR);
+          const g = wood.getContext("2d");
+          g.scale(DPR, DPR);
+          const r = rng(7);
+          const base = g.createLinearGradient(0, 0, w, h);
+          base.addColorStop(0, "#c98f57");
+          base.addColorStop(0.5, "#b97c45");
+          base.addColorStop(1, "#a96d3a");
+          g.fillStyle = base;
+          g.fillRect(0, 0, w, h);
+          const planks = 4;
+          for (let p = 0; p < planks; p++) {
+            const px = (p * w) / planks;
+            g.fillStyle = `rgba(${p % 2 ? "60,30,10" : "255,220,170"},${0.04 + r() * 0.04})`;
+            g.fillRect(px, 0, w / planks, h);
+            for (let k = 0; k < 18; k++) {
+              const x0 = px + (r() * w) / planks,
+                amp = 2 + r() * 5,
+                f = 0.01 + r() * 0.02,
+                ph = r() * 9;
+              g.strokeStyle = `rgba(80,40,15,${0.06 + r() * 0.14})`;
+              g.lineWidth = 0.6 + r() * 1.4;
+              g.beginPath();
+              for (let y = 0; y <= h; y += 6) {
+                const x =
+                  x0 +
+                  Math.sin(y * f + ph) * amp +
+                  Math.sin(y * 0.003 + ph) * amp * 2;
+                y ? g.lineTo(x, y) : g.moveTo(x, y);
+              }
+              g.stroke();
+            }
+            if (p) {
+              g.strokeStyle = "rgba(50,25,8,.45)";
+              g.lineWidth = 1.5;
+              g.beginPath();
+              g.moveTo(px, 0);
+              g.lineTo(px, h);
+              g.stroke();
+            }
+          }
+          for (let k = 0; k < 3; k++) {
+            const kx = r() * w,
+              ky = r() * h;
+            g.strokeStyle = "rgba(70,35,12,.35)";
+            for (let j = 1; j < 5; j++) {
+              g.lineWidth = 1;
+              g.beginPath();
+              g.ellipse(kx, ky, j * 3, j * 7, 0, 0, TAU);
+              g.stroke();
+            }
+          }
+          g.save();
+          g.translate(w * 0.62, h * 0.6);
+          g.rotate(-0.18);
+          g.font = `${Math.round(S * 5)}px "Patrick Hand", cursive`;
+          g.fillStyle = "rgba(60,28,8,.25)";
+          g.fillText("7B ♥", 0, 0);
+          g.restore();
+          g.strokeStyle = "rgba(255,235,200,.12)";
+          g.lineWidth = 1;
+          for (let k = 0; k < 14; k++) {
+            const x = r() * w,
+              y = r() * h,
+              l = 8 + r() * 30,
+              a = r() * TAU;
+            g.beginPath();
+            g.moveTo(x, y);
+            g.lineTo(x + Math.cos(a) * l, y + Math.sin(a) * l);
+            g.stroke();
+          }
+          g.strokeStyle = "rgba(40,18,4,.55)";
+          g.lineWidth = 6;
+          g.strokeRect(3, 3, w - 6, h - 6);
+          g.strokeStyle = "rgba(255,225,180,.25)";
+          g.lineWidth = 1.5;
+          g.strokeRect(7, 7, w - 14, h - 14);
+        }
+        addEventListener("resize", layout);
 
-// ---------- physics ----------
-function closest(A,Bs){
-  const d1x=A[2]-A[0],d1y=A[3]-A[1],d2x=Bs[2]-Bs[0],d2y=Bs[3]-Bs[1],rx=A[0]-Bs[0],ry=A[1]-Bs[1];
-  const a=d1x*d1x+d1y*d1y,e=d2x*d2x+d2y*d2y,f=d2x*rx+d2y*ry,c=d1x*rx+d1y*ry,b=d1x*d2x+d1y*d2y;
-  let s,t;
-  if(e<1e-9){t=0;s=a<1e-9?0:clamp(-c/a,0,1)}
-  else{const den=a*e-b*b;s=den>1e-9?clamp((b*f-c*e)/den,0,1):0;t=(b*s+f)/e;
-    if(t<0){t=0;s=clamp(-c/a,0,1)}else if(t>1){t=1;s=clamp((b-c)/a,0,1)}}
-  return[A[0]+d1x*s,A[1]+d1y*s,Bs[0]+d2x*t,Bs[1]+d2y*t];
-}
-const mass=p=>p.m*(p.heavyOn?3:1);
-const inert=(p,m)=>m*(p.hl*p.hl/3+p.r*p.r/2);
-const outside=p=>p.x<B.x0||p.x>B.x1||p.y<B.y0||p.y>B.y1;
-function collide(A,Bp){
-  const [ax,ay,bx,by]=closest(seg(A),seg(Bp));let nx=ax-bx,ny=ay-by,d=Math.hypot(nx,ny);const rr=A.r+Bp.r;
-  if(d>=rr)return;if(d<1e-6){nx=-Math.sin(Bp.a);ny=Math.cos(Bp.a);d=1e-6}else{nx/=d;ny/=d}
-  const mA=mass(A),mB=mass(Bp),pen=rr-d,share=mB/(mA+mB);
-  A.x+=nx*pen*share;A.y+=ny*pen*share;Bp.x-=nx*pen*(1-share);Bp.y-=ny*pen*(1-share);
-  const cx=bx+nx*Bp.r,cy=by+ny*Bp.r;
-  const rax=cx-A.x,ray=cy-A.y,rbx=cx-Bp.x,rby=cy-Bp.y;
-  const IA=inert(A,mA),IB=inert(Bp,mB);
-  const vax=A.vx-A.w*ray,vay=A.vy+A.w*rax,vbx=Bp.vx-Bp.w*rby,vby=Bp.vy+Bp.w*rbx;
-  const vn=(vax-vbx)*nx+(vay-vby)*ny;if(vn>=0)return;
-  const ca=rax*ny-ray*nx,cb=rbx*ny-rby*nx,e=(A.rest+Bp.rest)/2;
-  const j=-(1+e)*vn/(1/mA+1/mB+ca*ca/IA+cb*cb/IB);
-  A.vx+=j*nx/mA;A.vy+=j*ny/mA;A.w+=ca*j/IA;Bp.vx-=j*nx/mB;Bp.vy-=j*ny/mB;Bp.w-=cb*j/IB;
-  const o=A.kind?A:Bp.kind?Bp:null;
-  if(o)sfx.obj(o.kind,-vn);else sfx.clack(-vn,A.heavyOn||Bp.heavyOn);
-  if(A.heavyOn||Bp.heavyOn)shake=Math.max(shake,6);
-}
-function step(h){
-  const live=pens.filter(p=>p.alive),objs=obst.filter(o=>!o.gone),all=live.concat(objs);
-  for(const p of all){
-    p.x+=p.vx*h;p.y+=p.vy*h;p.a+=p.w*h;
-    const f=Math.exp(-p.fr*h);p.vx*=f;p.vy*=f;const sp=Math.hypot(p.vx,p.vy);
-    if(sp>0){const ns=Math.max(0,sp-p.dec*h);p.vx*=ns/sp;p.vy*=ns/sp}
-    p.w*=Math.exp(-p.afr*h);p.w-=Math.sign(p.w)*Math.min(Math.abs(p.w),1.2*h);
-    if(sp<.6&&Math.abs(p.w)<.2){p.vx=p.vy=p.w=0}
-  }
-  for(let i=0;i<all.length;i++)for(let k=i+1;k<all.length;k++)collide(all[i],all[k]);
-  for(const p of live){if(p.vx===0&&p.vy===0)continue;
-    for(let k=blots.length-1;k>=0;k--){const b=blots[k];const [ax,ay]=closest(seg(p),[b.x,b.y,b.x,b.y]);
-      if(Math.hypot(ax-b.x,ay-b.y)<b.r+p.r*.4){blots.splice(k,1);grant(p,b)}}}
-  for(const p of live){
-    if(outside(p)){
-      if(p.shield){p.shield=false;
-        if(p.x<B.x0){p.x=B.x0+1;p.vx=Math.abs(p.vx)*.5}if(p.x>B.x1){p.x=B.x1-1;p.vx=-Math.abs(p.vx)*.5}
-        if(p.y<B.y0){p.y=B.y0+1;p.vy=Math.abs(p.vy)*.5}if(p.y>B.y1){p.y=B.y1-1;p.vy=-Math.abs(p.vy)*.5}
-        sfx.shield();hint(`${p.name}'s shield saved it!`);showBanner('SHIELD SAVE',POWERS.shield.col);renderChips();continue}
-      p.alive=false;p.fall=0;sfx.fall();hint(`${p.name} fell off the desk!`);renderChips()}}
-  for(const o of objs)if(outside(o)){o.gone=true;o.fade=1;sfx.objFall()}
-}
-function grant(p,b){
-  const opts=['double','heavy','shield'].filter(k=>!p[k]);if(!opts.length)return;
-  const k=opts[Math.floor(Math.random()*opts.length)];p[k]=true;sfx.power();
-  for(let i=0;i<18;i++){const a=Math.random()*TAU,s=10+Math.random()*25;chips.push({x:b.x,y:b.y,vx:Math.cos(a)*s,vy:Math.sin(a)*s,life:1,col:'#3b3fa8',sz:.5+Math.random()*.8})}
-  hint(`${p.name} got ${POWERS[k].label}!`);showBanner(POWERS[k].label.toUpperCase(),POWERS[k].col);renderChips();
-}
+        // ---------- game state ----------
+        let pens = [],
+          obst = [],
+          blots = [],
+          chips = [],
+          cur = 0,
+          phase = "setup",
+          shotAt = 0,
+          drag = null,
+          aiAnim = null,
+          gameId = 0,
+          pulse = 0,
+          lastT = 0;
+        let B = { x0: 0, y0: 0, x1: TW, y1: TH },
+          Bfrom = null,
+          Bto = null,
+          shrinkT = 0,
+          deskRound = 0,
+          jag = null,
+          shake = 0;
+        let teacher = null,
+          lastTeacher = false,
+          banner = null,
+          turnsSinceCrack = 0;
+        function placePens(n, K = kinds, Ty = types, N = null) {
+          pens = [];
+          for (let i = 0; i < n; i++) {
+            const ang = Math.PI / 2 + (i * TAU) / n,
+              T = TYPES[K[i]];
+            pens.push({
+              i,
+              x: TW / 2 + Math.cos(ang) * TW * 0.28,
+              y: TH / 2 + Math.sin(ang) * TH * 0.29,
+              a: ang + Math.PI / 2 + (Math.random() - 0.5) * 0.7,
+              vx: 0,
+              vy: 0,
+              w: 0,
+              rest: 0.55,
+              fr: 1.5,
+              dec: 12,
+              afr: 3,
+              hl: T.hl,
+              r: T.r,
+              m: T.m,
+              spd: T.spd,
+              type: K[i],
+              alive: true,
+              fall: -1,
+              human: Ty[i] === "human",
+              double: false,
+              heavy: false,
+              heavyOn: false,
+              shield: false,
+              ...PENS[i],
+              name: (N && N[i]) || PENS[i].name,
+            });
+          }
+        }
+        function seg(p) {
+          const c = Math.cos(p.a) * p.hl,
+            s = Math.sin(p.a) * p.hl;
+          return [p.x - c, p.y - s, p.x + c, p.y + s];
+        }
+        function distToPens(x, y, pad) {
+          for (const p of pens) {
+            if (!p.alive) continue;
+            const s = seg(p);
+            const [, , cx, cy] = closest(s, [x, y, x, y]);
+            const [ax, ay] = closest(s, [x, y, x, y]);
+            if (Math.hypot(ax - x, ay - y) < p.r + pad) return false;
+          }
+          return true;
+        }
+        function freeSpot(pad, margin) {
+          for (let k = 0; k < 80; k++) {
+            const x =
+                B.x0 + margin + Math.random() * (B.x1 - B.x0 - 2 * margin),
+              y = B.y0 + margin + Math.random() * (B.y1 - B.y0 - 2 * margin);
+            if (!distToPens(x, y, pad)) continue;
+            if (
+              obst.some(
+                (o) =>
+                  !o.gone && Math.hypot(o.x - x, o.y - y) < o.hl + o.r + pad,
+              )
+            )
+              continue;
+            if (blots.some((b) => Math.hypot(b.x - x, b.y - y) < b.r * 2 + 4))
+              continue;
+            return [x, y];
+          }
+          return null;
+        }
+        function placeObstacles() {
+          obst = [];
+          const defs = [
+            {
+              kind: "eraser",
+              hl: 3.4,
+              r: 3,
+              m: 1.5,
+              rest: 0.2,
+              fr: 3.2,
+              dec: 30,
+              afr: 5,
+            },
+            {
+              kind: "sharpener",
+              hl: 1,
+              r: 2.6,
+              m: 2.4,
+              rest: 0.5,
+              fr: 2.4,
+              dec: 20,
+              afr: 4,
+            },
+            {
+              kind: "coin",
+              hl: 0,
+              r: 2.9,
+              m: 0.7,
+              rest: 0.75,
+              fr: 1,
+              dec: 7,
+              afr: 2,
+            },
+          ];
+          for (const d of defs) {
+            const s = freeSpot(d.hl + d.r + 5, 16);
+            if (s)
+              obst.push({
+                ...d,
+                x: s[0],
+                y: s[1],
+                a: Math.random() * Math.PI,
+                vx: 0,
+                vy: 0,
+                w: 0,
+                gone: false,
+                fade: 1,
+              });
+          }
+        }
+        function spawnBlot() {
+          if (blots.length >= 2) return;
+          const s = freeSpot(6, 9);
+          if (!s) return;
+          const pts = [];
+          const n = 14;
+          for (let k = 0; k < n; k++) pts.push(0.75 + Math.random() * 0.45);
+          const drops = [];
+          for (let k = 0; k < 4; k++) {
+            const a = Math.random() * TAU;
+            drops.push([
+              Math.cos(a) * (1.6 + Math.random() * 0.6),
+              Math.sin(a) * (1.6 + Math.random() * 0.6),
+              0.15 + Math.random() * 0.2,
+            ]);
+          }
+          blots.push({
+            id: ++NET.blotSeq,
+            x: s[0],
+            y: s[1],
+            r: 3.4,
+            pts,
+            drops,
+            born: performance.now(),
+          });
+        }
+        function makeJag() {
+          const N = 16,
+            mk = () =>
+              Array.from({ length: N + 1 }, (_, k) =>
+                k === 0 || k === N ? 0 : Math.random() * 1.6,
+              );
+          jag = { N, t: mk(), r: mk(), b: mk(), l: mk() };
+        }
+        function hint(t) {
+          NET.baseHint = t;
+          refreshHint();
+        }
+        function refreshHint() {
+          let t = NET.baseHint;
+          if (NET.mode !== "local" && phase === "aim" && pens[cur]) {
+            if (cur === NET.mySeat)
+              t = teacher
+                ? "Teacher's coming! Flick fast!"
+                : /Double/.test(t)
+                  ? "Double flick! Go again."
+                  : "Your turn! Drag back and let go.";
+            else if (!teacher) t = `${pens[cur].name} is aiming…`;
+          }
+          if (t !== NET.shownHint) {
+            NET.shownHint = t;
+            $("hint").textContent = t;
+          }
+        }
+        function renderChips() {
+          $("chips").innerHTML =
+            phase === "setup" || phase === "lobby"
+              ? ""
+              : pens
+                  .map((p) => {
+                    const tags = ["double", "heavy", "shield"]
+                      .filter((k) => p[k])
+                      .map(
+                        (k) =>
+                          `<em style="background:${POWERS[k].col}">${POWERS[k].tag}</em>`,
+                      )
+                      .join("");
+                    return `<div class="chip${p.i === cur && phase !== "over" ? " cur" : ""}${p.alive ? "" : " out"}"><i style="background:${p.light}"></i>${esc(p.name)}${p.human ? "" : " <small>CPU</small>"}${NET.mode !== "local" && p.i === NET.mySeat ? " <u>YOU</u>" : ""}${tags}<b>${wins[p.i]}</b></div>`;
+                  })
+                  .join("");
+        }
+        function newGame() {
+          gameId++;
+          B = { x0: 0, y0: 0, x1: TW, y1: TH };
+          deskRound = 0;
+          turnsSinceCrack = 0;
+          makeJag();
+          blots = [];
+          chips = [];
+          teacher = null;
+          lastTeacher = false;
+          banner = null;
+          if (NET.mode === "host") {
+            const st = NET.seats;
+            placePens(
+              st.length,
+              st.map((x) => x.type),
+              st.map((x) => (x.kind === "cpu" ? "cpu" : "human")),
+              st.map((x, i) => (x.kind === "cpu" ? PENS[i].name : x.name)),
+            );
+            NET.owners = st.map((x) => (x.kind === "remote" ? x.peer : x.kind));
+          } else placePens(count);
+          placeObstacles();
+          spawnBlot();
+          cur = rounds % pens.length;
+          rounds++;
+          drag = null;
+          aiAnim = null;
+          NET.remoteAim = null;
+          $("setup").hidden = true;
+          $("over").hidden = true;
+          $("lobby").hidden = true;
+          renderChips();
+          layout();
+          wake();
+          beginTurn(false);
+          if (NET.mode === "host") sendInit();
+        }
+        function beginTurn(extra) {
+          const p = pens[cur];
+          drag = null;
+          phase = p.human ? "aim" : "cpu";
+          play("turn");
+          if (p.human) {
+            phase = "aim";
+            const canTeacher =
+              !extra && deskRound >= 1 && !lastTeacher && Math.random() < 0.22;
+            if (canTeacher) {
+              teacher = { t: 3, lastSec: 4 };
+              lastTeacher = true;
+              hint(`Teacher's coming! ${p.name}, flick fast!`);
+              play("alarm");
+            } else {
+              lastTeacher = false;
+              hint(
+                extra
+                  ? `Double flick! ${p.name} goes again.`
+                  : `${p.name}'s turn. Drag back and let go.`,
+              );
+            }
+            renderChips();
+          } else {
+            phase = "cpu";
+            lastTeacher = false;
+            hint(
+              extra
+                ? `Double flick! ${p.name} goes again.`
+                : `${p.name} is aiming…`,
+            );
+            renderChips();
+            const id = gameId;
+            setTimeout(() => aiPlay(id), 650);
+          }
+        }
+        function nextAlive(from) {
+          let j = from;
+          do {
+            j = (j + 1) % pens.length;
+          } while (!pens[j].alive);
+          return j;
+        }
+        function endTurn(skipped) {
+          teacher = null;
+          pens.forEach((p) => (p.heavyOn = false));
+          const alive = pens.filter((p) => p.alive);
+          if (alive.length <= 1) {
+            finish(alive[0]);
+            return;
+          }
+          const me = pens[cur];
+          if (!skipped && me.alive && me.double) {
+            me.double = false;
+            showBanner("DOUBLE FLICK", POWERS.double.col);
+            beginTurn(true);
+            return;
+          }
+          const j = nextAlive(cur);
+          const wrapped = j <= cur;
+          cur = j;
+          turnsSinceCrack++;
+          if (wrapped) {
+            deskRound++;
+            spawnBlot();
+          }
+          const chance =
+            turnsSinceCrack < 2
+              ? 0
+              : Math.min(0.6, 0.06 + 0.07 * (turnsSinceCrack - 1));
+          if (Math.random() < chance && startShrink()) {
+            turnsSinceCrack = 0;
+            return;
+          }
+          beginTurn(false);
+        }
+        function startShrink() {
+          const minW = TW * 0.42,
+            minH = TH * 0.42,
+            w = B.x1 - B.x0,
+            h = B.y1 - B.y0,
+            sides = [];
+          if (w > minW + 4) sides.push("x0", "x1");
+          if (h > minH + 4) sides.push("y0", "y1");
+          if (!sides.length) return false;
+          const pick = [sides[Math.floor(Math.random() * sides.length)]];
+          if (Math.random() < 0.3) {
+            const o = sides.filter((q) => q !== pick[0]);
+            pick.push(o[Math.floor(Math.random() * o.length)]);
+          }
+          Bfrom = { ...B };
+          Bto = { ...B };
+          for (const sd of pick) {
+            const isX = sd[0] === "x",
+              share = pick.filter((q) => q[0] === sd[0]).length;
+            const a = Math.min(
+              6 + Math.random() * 7,
+              (isX ? w - minW : h - minH) / share,
+            );
+            Bto[sd] += sd.endsWith("0") ? a : -a;
+          }
+          shrinkT = 0;
+          phase = "shrink";
+          const NAMES = { x0: "left", x1: "right", y0: "top", y1: "bottom" };
+          hint(
+            `Crack! The ${pick.map((q) => NAMES[q]).join(" and ")} edge${pick.length > 1 ? "s" : ""} broke off!`,
+          );
+          play("crack");
+          kick(10);
+          showBanner("THE DESK CRACKS", "#f2b134");
+          return true;
+        }
+        function afterShrink() {
+          const alive = pens.filter((p) => p.alive);
+          if (alive.length <= 1) {
+            finish(alive[0]);
+            return;
+          }
+          if (!pens[cur].alive) cur = nextAlive(cur);
+          beginTurn(false);
+        }
+        function finish(w) {
+          phase = "over";
+          teacher = null;
+          if (w) {
+            wins[w.i]++;
+            hint(`${w.name} rules the desk!`);
+            play("win");
+          } else hint("Everyone fell off!");
+          renderChips();
+          const title = w ? `${w.name} wins!` : "It's a draw!";
+          if (NET.mode === "host") NET.ev.push(["o", title]);
+          showOver(title);
+        }
+        function showOver(title) {
+          $("winTitle").textContent = title;
+          $("tally").innerHTML = pens
+            .map(
+              (p) =>
+                `<div><i style="background:${p.base}"></i><span>${esc(p.name)} · ${TYPES[p.type].label}${p.human ? "" : " (CPU)"}</span><b>${wins[p.i]}</b></div>`,
+            )
+            .join("");
+          const net = NET.mode !== "local",
+            host = NET.mode !== "client";
+          $("again").hidden = !host;
+          $("change").hidden = !host;
+          $("change").textContent = net ? "Back to lobby" : "Change players";
+          $("overNote").hidden = host;
+          $("overNote").textContent =
+            "Waiting for the host to start a rematch…";
+          $("leave").hidden = !net;
+          const id = gameId;
+          setTimeout(() => {
+            if (id === gameId && phase === "over") $("over").hidden = false;
+          }, 900);
+        }
+        function kick(v) {
+          shake = Math.max(shake, v);
+          if (NET.mode === "host") NET.ev.push(["k", v]);
+        }
+        function burst(x, y) {
+          for (let i = 0; i < 18; i++) {
+            const a = Math.random() * TAU,
+              s = 10 + Math.random() * 25;
+            chips.push({
+              x,
+              y,
+              vx: Math.cos(a) * s,
+              vy: Math.sin(a) * s,
+              life: 1,
+              col: "#3b3fa8",
+              sz: 0.5 + Math.random() * 0.8,
+            });
+          }
+        }
+        function edgeChip() {
+          const side = Math.floor(Math.random() * 4),
+            t = Math.random();
+          const x =
+              side < 2 ? B.x0 + (B.x1 - B.x0) * t : side === 2 ? B.x0 : B.x1,
+            y = side >= 2 ? B.y0 + (B.y1 - B.y0) * t : side === 0 ? B.y0 : B.y1;
+          chips.push({
+            x,
+            y,
+            vx: (Math.random() - 0.5) * 20,
+            vy: (Math.random() - 0.5) * 20,
+            life: 1,
+            col: "#7a4a22",
+            sz: 0.6 + Math.random(),
+          });
+        }
+        function showBanner(txt, col) {
+          banner = { txt, col, t: 0 };
+          if (NET.mode === "host") NET.ev.push(["b", txt, col]);
+        }
+        function shoot(p, anchor, dir, power) {
+          const sp = SPEED * power * p.spd;
+          p.vx += dir[0] * sp;
+          p.vy += dir[1] * sp;
+          const rx = anchor[0] - p.x,
+            ry = anchor[1] - p.y;
+          p.w +=
+            (((rx * dir[1] - ry * dir[0]) * sp) /
+              ((p.hl * p.hl) / 3 + (p.r * p.r) / 2)) *
+            0.55;
+          if (p.heavy) {
+            p.heavy = false;
+            p.heavyOn = true;
+            renderChips();
+          }
+          teacher = null;
+          NET.remoteAim = null;
+          phase = "moving";
+          shotAt = performance.now();
+          hint("");
+          play("flick", power);
+        }
+        function aiPlay(id) {
+          if (id !== gameId || phase !== "cpu") return;
+          const me = pens[cur];
+          let t = null,
+            bs = 1e9;
+          for (const o of pens) {
+            if (!o.alive || o === me) continue;
+            const d = Math.hypot(o.x - me.x, o.y - me.y),
+              edge = Math.min(o.x - B.x0, B.x1 - o.x, o.y - B.y0, B.y1 - o.y);
+            const s = d + edge * 1.4 + Math.random() * 12;
+            if (s < bs) {
+              bs = s;
+              t = o;
+            }
+          }
+          // sometimes go for a nearby ink blot instead
+          const blot = blots.find(
+            (b) => Math.hypot(b.x - me.x, b.y - me.y) < 28,
+          );
+          let tx = t.x,
+            ty = t.y,
+            soft = false;
+          if (blot && Math.random() < 0.35) {
+            tx = blot.x;
+            ty = blot.y;
+            soft = true;
+          }
+          const d = Math.hypot(tx - me.x, ty - me.y);
+          const err =
+            (Math.random() + Math.random() + Math.random() - 1.5) * 0.16;
+          const ang = Math.atan2(ty - me.y, tx - me.x) + err;
+          const need = soft ? d * 1.5 + 8 : d * 1.45 + 55;
+          const power = clamp(
+            (need / (SPEED * me.spd)) * (0.88 + Math.random() * 0.25),
+            0.2,
+            1,
+          );
+          const ax = Math.cos(me.a),
+            ay = Math.sin(me.a),
+            off = (Math.random() - 0.5) * me.hl * 0.7;
+          aiAnim = {
+            anchor: [me.x + ax * off, me.y + ay * off],
+            dir: [Math.cos(ang), Math.sin(ang)],
+            power,
+            t: 0,
+            id,
+          };
+        }
 
-// ---------- drawing ----------
-const X=x=>ox+x*S,Y=y=>oy+y*S;
-function capsule(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.lineTo(x+w-r,y);ctx.arc(x+w-r,y+r,r,-Math.PI/2,Math.PI/2);
-  ctx.lineTo(x+r,y+h);ctx.arc(x+r,y+r,r,Math.PI/2,Math.PI*1.5);ctx.closePath()}
-function rrect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
-const grad=(R,c1,c2,c3)=>{const g=ctx.createLinearGradient(0,-R,0,R);g.addColorStop(0,c1);g.addColorStop(.45,c2);g.addColorStop(1,c3);return g};
-function drawPen(p,scale,alpha,halo){
-  const cx=X(p.x),cy=Y(p.y),L=p.hl*S,R=p.r*S;
-  ctx.save();ctx.globalAlpha=alpha;
-  ctx.save();ctx.translate(cx+R*.9,cy+R*1.3);ctx.rotate(p.a);ctx.scale(scale,scale);ctx.fillStyle='rgba(35,15,2,.35)';
-  capsule(-L,-R,2*L,2*R,R);ctx.fill();ctx.restore();
-  ctx.translate(cx,cy);ctx.rotate(p.a);ctx.scale(scale,scale);
-  if(halo){ctx.save();ctx.shadowColor='#ffe08a';ctx.shadowBlur=16+pulse*10;ctx.strokeStyle=`rgba(255,224,138,${.55+pulse*.4})`;
-    ctx.lineWidth=3;capsule(-L-4,-R-4,2*L+8,2*R+8,R+4);ctx.stroke();ctx.restore()}
-  if(p.heavyOn||p.heavy){ctx.save();ctx.shadowColor='#ffa94d';ctx.shadowBlur=p.heavyOn?22:10;ctx.strokeStyle=`rgba(255,169,77,${p.heavyOn?.9:.5})`;
-    ctx.lineWidth=2;capsule(-L-2,-R-2,2*L+4,2*R+4,R+2);ctx.stroke();ctx.restore()}
-  if(p.type==='pencil'){
-    ctx.fillStyle=grad(R,p.light,p.base,p.dark);ctx.fillRect(-L+R*3,-R,2*L-R*4.6,2*R);
-    ctx.fillStyle='rgba(255,255,255,.25)';ctx.fillRect(-L+R*3,-R*.45,2*L-R*4.6,R*.25);
-    ctx.fillStyle='rgba(0,0,0,.2)';ctx.fillRect(-L+R*3,R*.35,2*L-R*4.6,R*.2);
-    ctx.fillStyle='#e8c18f';ctx.beginPath();ctx.moveTo(-L+R*3,-R);ctx.lineTo(-L+R*.8,-R*.3);ctx.lineTo(-L+R*.8,R*.3);ctx.lineTo(-L+R*3,R);ctx.closePath();ctx.fill();
-    ctx.fillStyle='#333';ctx.beginPath();ctx.moveTo(-L+R*1.4,-R*.48);ctx.lineTo(-L,0);ctx.lineTo(-L+R*1.4,R*.48);ctx.closePath();ctx.fill();
-    ctx.fillStyle=grad(R,'#fafafa','#c8ccd2','#868b93');ctx.fillRect(L-R*1.6,-R,R*.9,2*R);
-    ctx.fillStyle=grad(R,'#ffc2cf','#f08ba3','#c45f78');capsule(L-R*.9,-R,R*.9+R*.01,2*R,R*.45);ctx.fill();
-  }else if(p.type==='marker'){
-    ctx.fillStyle=p.base;ctx.fillRect(-L,-R*.45,R*1.2,R*.9);
-    ctx.fillStyle=grad(R,'#ffffff','#eef0f3','#a8adb6');capsule(-L+R*1,-R,L*1.25,2*R,R*.7);ctx.fill();
-    ctx.fillStyle=p.base;ctx.fillRect(-L+L*.45,-R*.75,L*.5,R*1.5);
-    ctx.fillStyle='rgba(255,255,255,.85)';ctx.fillRect(-L+L*.52,-R*.18,L*.36,R*.36);
-    ctx.fillStyle=grad(R,p.light,p.base,p.dark);capsule(L*.15,-R*1.08,L*.85,R*2.16,R*.9);ctx.fill();
-    ctx.fillStyle='rgba(0,0,0,.2)';for(let k=0;k<3;k++)ctx.fillRect(L*.25+k*L*.1,-R*1.08,1.5,R*2.16);
-  }else{
-    ctx.fillStyle=grad(R,'#ffffff','#e6e9ee','#9aa0aa');capsule(-L+R*2.4,-R,2*L-R*2.4,2*R,R);ctx.fill();
-    ctx.fillStyle=p.base;ctx.globalAlpha=alpha*.85;ctx.fillRect(-L+R*2.6,-R*.28,L*1.1,R*.56);ctx.globalAlpha=alpha;
-    ctx.fillStyle=grad(R,p.light,p.base,p.dark);ctx.fillRect(-L+R*2.4,-R*1.05,L*.42,R*2.1);
-    for(let k=1;k<5;k++){ctx.fillStyle='rgba(0,0,0,.18)';ctx.fillRect(-L+R*2.4+k*L*.08,-R*1.05,1.2,R*2.1)}
-    ctx.fillStyle=grad(R,'#f2f2f2','#b8bcc4','#6e737c');ctx.beginPath();ctx.moveTo(-L+R*2.4,-R*.9);ctx.lineTo(-L+R*.4,-R*.25);
-    ctx.lineTo(-L+R*.4,R*.25);ctx.lineTo(-L+R*2.4,R*.9);ctx.closePath();ctx.fill();
-    ctx.fillStyle='#2a2a2a';ctx.beginPath();ctx.arc(-L+R*.35,0,R*.28,0,TAU);ctx.fill();
-    ctx.fillStyle=grad(R,p.light,p.base,p.dark);capsule(L*.38,-R*1.12,L*.62,R*2.24,R*1.1);ctx.fill();
-    ctx.fillStyle=grad(R,'#ffffff','#cfd3da','#8b9099');capsule(L*.48,-R*.32,L*.46,R*.64,R*.32);ctx.fill();
-    ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=Math.max(1,R*.25);ctx.beginPath();ctx.moveTo(-L+R*3,-R*.55);ctx.lineTo(L*.3,-R*.55);ctx.stroke();
-  }
-  ctx.restore();
-}
-function drawBadges(p){
-  const cx=X(p.x),cy=Y(p.y);
-  if(p.shield){ctx.save();ctx.strokeStyle=POWERS.shield.col;ctx.globalAlpha=.45+pulse*.35;ctx.lineWidth=2.5;ctx.setLineDash([6,5]);
-    ctx.beginPath();ctx.arc(cx,cy,(p.hl+2)*S,0,TAU);ctx.stroke();ctx.restore()}
-  const tags=['double','heavy','shield'].filter(k=>p[k]);if(!tags.length)return;
-  ctx.font='800 10px Nunito, sans-serif';let tw=0;const ws=tags.map(k=>ctx.measureText(POWERS[k].tag).width+10);tw=ws.reduce((a,b)=>a+b,0)+(tags.length-1)*3;
-  let x=cx-tw/2;const y=cy-Math.max(p.r*S+16,22);
-  tags.forEach((k,i)=>{ctx.fillStyle=POWERS[k].col;rrect(x,y-8,ws[i],16,6);ctx.fill();ctx.fillStyle='#14181a';ctx.textAlign='center';ctx.fillText(POWERS[k].tag,x+ws[i]/2,y+4);x+=ws[i]+3});
-}
-function drawObstacle(o){
-  const cx=X(o.x),cy=Y(o.y),L=o.hl*S,R=o.r*S;ctx.save();ctx.globalAlpha=o.fade;
-  ctx.save();ctx.translate(cx+3,cy+4);ctx.rotate(o.a);ctx.fillStyle='rgba(35,15,2,.38)';
-  if(o.kind==='coin'){ctx.beginPath();ctx.arc(0,0,R,0,TAU);ctx.fill()}else{rrect(-L-R,-R,2*(L+R),2*R,R*.45);ctx.fill()}ctx.restore();
-  ctx.translate(cx,cy);ctx.rotate(o.a);
-  if(o.kind==='eraser'){
-    ctx.fillStyle=grad(R,'#ffffff','#f3efe6','#c9c2b4');rrect(-L-R,-R,2*(L+R),2*R,R*.45);ctx.fill();
-    ctx.fillStyle=grad(R,'#5d93ea','#2f6fd0','#1d4d99');ctx.fillRect(-L*.55-R*.2,-R,L*1.1+R*1.2,2*R);
-    ctx.fillStyle='rgba(255,255,255,.9)';ctx.fillRect(-L*.55-R*.2,-R*.18,L*1.1+R*1.2,R*.36);
-  }else if(o.kind==='sharpener'){
-    ctx.fillStyle=grad(R,'#f4f6f8','#b9bec6','#7a8089');rrect(-L-R,-R,2*(L+R),2*R,R*.35);ctx.fill();
-    ctx.fillStyle='#2b2b2b';ctx.beginPath();ctx.arc(-L-R*.25,0,R*.45,0,TAU);ctx.fill();
-    ctx.strokeStyle='#5f646c';ctx.lineWidth=1.5;ctx.beginPath();ctx.moveTo(-L+R*.3,-R*.7);ctx.lineTo(L+R*.6,-R*.2);ctx.stroke();
-    ctx.fillStyle='#8b9099';ctx.beginPath();ctx.arc(L*.5+R*.3,R*.35,R*.18,0,TAU);ctx.fill();
-  }else{
-    const g=ctx.createRadialGradient(-R*.3,-R*.3,R*.1,0,0,R);g.addColorStop(0,'#fff1b8');g.addColorStop(.6,'#e0b23e');g.addColorStop(1,'#a67a16');
-    ctx.fillStyle=g;ctx.beginPath();ctx.arc(0,0,R,0,TAU);ctx.fill();
-    ctx.strokeStyle='rgba(120,80,10,.6)';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(0,0,R*.74,0,TAU);ctx.stroke();
-    ctx.fillStyle='rgba(110,70,5,.75)';ctx.font=`800 ${Math.round(R*.8)}px Nunito, sans-serif`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('50',0,1);
-  }
-  ctx.restore();
-}
-function drawBlot(b,now){
-  const cx=X(b.x),cy=Y(b.y),R=b.r*S*(1+Math.sin(now/300)*.05)*clamp((performance.now()-b.born)/300,.05,1);
-  ctx.save();ctx.translate(cx,cy);ctx.fillStyle='rgba(40,44,140,.88)';ctx.beginPath();
-  const n=b.pts.length;for(let k=0;k<=n;k++){const a=k/n*TAU,r=R*b.pts[k%n];k?ctx.lineTo(Math.cos(a)*r,Math.sin(a)*r):ctx.moveTo(Math.cos(a)*r,Math.sin(a)*r)}
-  ctx.closePath();ctx.fill();
-  for(const d of b.drops){ctx.beginPath();ctx.arc(d[0]*R*.75,d[1]*R*.75,d[2]*R,0,TAU);ctx.fill()}
-  ctx.fillStyle='rgba(255,255,255,.25)';ctx.beginPath();ctx.ellipse(-R*.3,-R*.35,R*.28,R*.14,-.5,0,TAU);ctx.fill();
-  ctx.fillStyle='#fff';ctx.font=`${Math.round(R*1.1)}px "Patrick Hand", cursive`;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText('?',0,R*.06);
-  ctx.restore();
-}
-function deskPath(){
-  const full=B.x0===0&&B.y0===0&&B.x1===TW&&B.y1===TH;ctx.beginPath();
-  if(full){ctx.rect(X(0),Y(0),TW*S,TH*S);return}
-  const N=jag.N;
-  for(let k=0;k<=N;k++){const x=B.x0+(B.x1-B.x0)*k/N;ctx[k?'lineTo':'moveTo'](X(x),Y(B.y0+(B.y0>0?jag.t[k]:0)))}
-  for(let k=1;k<=N;k++){const y=B.y0+(B.y1-B.y0)*k/N;ctx.lineTo(X(B.x1-(B.x1<TW?jag.r[k]:0)),Y(y))}
-  for(let k=1;k<=N;k++){const x=B.x1-(B.x1-B.x0)*k/N;ctx.lineTo(X(x),Y(B.y1-(B.y1<TH?jag.b[k]:0)))}
-  for(let k=1;k<=N;k++){const y=B.y1-(B.y1-B.y0)*k/N;ctx.lineTo(X(B.x0+(B.x0>0?jag.l[k]:0)),Y(y))}
-  ctx.closePath();
-}
-function drawAim(anchor,pull,power){
-  const ax=X(anchor[0]),ay=Y(anchor[1]),len=Math.hypot(pull[0],pull[1])||1,ux=pull[0]/len,uy=pull[1]/len;
-  ctx.strokeStyle='rgba(255,255,255,.55)';ctx.lineWidth=3;ctx.beginPath();ctx.moveTo(ax,ay);
-  ctx.lineTo(ax-ux*power*MAXPULL*S*.9,ay-uy*power*MAXPULL*S*.9);ctx.stroke();
-  ctx.fillStyle='rgba(255,255,255,.8)';ctx.beginPath();ctx.arc(ax-ux*power*MAXPULL*S*.9,ay-uy*power*MAXPULL*S*.9,6,0,TAU);ctx.fill();
-  const col=power<.5?`hsl(${130-power*120},80%,60%)`:`hsl(${70-(power-.5)*140},90%,58%)`;
-  const al=(18+power*55)*S/3.5;
-  ctx.strokeStyle=col;ctx.lineWidth=4;ctx.setLineDash([8,7]);ctx.beginPath();ctx.moveTo(ax,ay);ctx.lineTo(ax+ux*al,ay+uy*al);ctx.stroke();ctx.setLineDash([]);
-  ctx.fillStyle=col;ctx.beginPath();const hx=ax+ux*al,hy=ay+uy*al;ctx.moveTo(hx+ux*14,hy+uy*14);
-  ctx.lineTo(hx-uy*9,hy+ux*9);ctx.lineTo(hx+uy*9,hy-ux*9);ctx.closePath();ctx.fill();
-  ctx.font='800 14px Nunito, sans-serif';ctx.textAlign='center';ctx.textBaseline='alphabetic';ctx.fillStyle='#fff';
-  ctx.fillText(Math.round(power*100)+'%',hx+ux*30,hy+uy*30+5);
-  ctx.fillStyle=col;ctx.beginPath();ctx.arc(ax,ay,4,0,TAU);ctx.fill();
-}
-function drawTeacher(){
-  const sec=Math.ceil(teacher.t);const a=.25+.25*Math.sin(performance.now()/120);
-  const g=ctx.createRadialGradient(W/2,H/2,Math.min(W,H)*.35,W/2,H/2,Math.max(W,H)*.75);
-  g.addColorStop(0,'rgba(220,40,40,0)');g.addColorStop(1,`rgba(220,40,40,${a})`);ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
-  const bw=Math.min(W-40,300),bx=(W-bw)/2,by=Y(B.y0)+14;
-  ctx.fillStyle='#c62828';rrect(bx,by,bw,64,14);ctx.fill();
-  ctx.fillStyle='#fff';ctx.textAlign='center';ctx.textBaseline='middle';
-  ctx.font='26px "Patrick Hand", cursive';ctx.fillText("TEACHER'S COMING!",W/2-22,by+24);
-  ctx.font='800 13px Nunito, sans-serif';ctx.fillText('Flick before time runs out',W/2-22,by+47);
-  ctx.beginPath();ctx.arc(bx+bw-34,by+32,22,0,TAU);ctx.fillStyle='#fff';ctx.fill();
-  ctx.strokeStyle='#ffcc4d';ctx.lineWidth=5;ctx.beginPath();ctx.arc(bx+bw-34,by+32,22,-Math.PI/2,-Math.PI/2+TAU*(teacher.t/3));ctx.stroke();
-  ctx.fillStyle='#c62828';ctx.font='800 22px Nunito, sans-serif';ctx.fillText(sec,bx+bw-34,by+33);
-}
-function drawBanner(){
-  const k=banner.t,a=k<.15?k/.15:k>1.1?Math.max(0,1-(k-1.1)/.3):1;if(a<=0)return;
-  const s=.8+.2*Math.min(1,k/.15);ctx.save();ctx.globalAlpha=a;ctx.translate(W/2,Y(B.y0+(B.y1-B.y0)/2));ctx.scale(s,s);ctx.rotate(-.04);
-  ctx.font='40px "Patrick Hand", cursive';const tw=ctx.measureText(banner.txt).width+36;
-  ctx.fillStyle='rgba(20,22,24,.78)';rrect(-tw/2,-30,tw,60,12);ctx.fill();
-  ctx.fillStyle=banner.col;ctx.textAlign='center';ctx.textBaseline='middle';ctx.fillText(banner.txt,0,2);ctx.restore();
-}
-function draw(now){
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-  let sx=0,sy=0;if(shake>0){sx=(Math.random()-.5)*shake;sy=(Math.random()-.5)*shake}
-  ctx.fillStyle='#26302f';ctx.fillRect(0,0,W,H);
-  ctx.strokeStyle='rgba(255,255,255,.035)';ctx.lineWidth=1;const tile=48;
-  for(let x=(W/2)%tile;x<W;x+=tile){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke()}
-  for(let y=(H/2)%tile;y<H;y+=tile){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke()}
-  ctx.translate(sx,sy);
-  for(const p of pens)if(p.fall>=0&&p.fall<1)drawPen(p,1-p.fall*.45,1-p.fall,false);
-  for(const o of obst)if(o.gone&&o.fade>0)drawObstacle(o);
-  ctx.save();ctx.shadowColor='rgba(0,0,0,.55)';ctx.shadowBlur=30;ctx.shadowOffsetY=12;ctx.fillStyle='#8a5a30';deskPath();ctx.fill();ctx.restore();
-  ctx.save();deskPath();ctx.clip();if(wood)ctx.drawImage(wood,X(0),Y(0),TW*S,TH*S);ctx.restore();
-  if(B.x0>0||B.y0>0||B.x1<TW||B.y1<TH){ctx.strokeStyle='#4a2a10';ctx.lineWidth=3;deskPath();ctx.stroke();
-    ctx.strokeStyle='rgba(255,215,160,.35)';ctx.lineWidth=1;deskPath();ctx.stroke()}
-  for(const b of blots)drawBlot(b,now);
-  for(const o of obst)if(!o.gone)drawObstacle(o);
-  for(const p of pens)if(p.alive)drawPen(p,1,1,(phase==='aim'||phase==='cpu')&&p.i===cur);
-  for(const p of pens)if(p.alive)drawBadges(p);
-  for(const c of chips){ctx.globalAlpha=c.life;ctx.fillStyle=c.col;ctx.fillRect(X(c.x)-c.sz*S/2,Y(c.y)-c.sz*S/2,c.sz*S,c.sz*S)}ctx.globalAlpha=1;
-  if(drag&&phase==='aim'){const pull=[drag.start[0]-drag.pt[0],drag.start[1]-drag.pt[1]];const pw=Math.min(Math.hypot(...pull)/MAXPULL,1);
-    if(pw>.03)drawAim(drag.anchor,pull,pw)}
-  if(aiAnim){const k=Math.min(aiAnim.t/.6,1),e=1-Math.pow(1-k,3);
-    drawAim(aiAnim.anchor,[aiAnim.dir[0]*e*aiAnim.power*MAXPULL,aiAnim.dir[1]*e*aiAnim.power*MAXPULL],aiAnim.power*e)}
-  ctx.setTransform(DPR,0,0,DPR,0,0);
-  if(teacher&&phase==='aim')drawTeacher();
-  if(banner)drawBanner();
-}
-function frame(now){
-  const dt=Math.min(.033,(now-(lastT||now))/1000);lastT=now;pulse=(Math.sin(now/260)+1)/2;
-  if(shake>0){shake*=.88;if(shake<.3)shake=0}
-  if(banner){banner.t+=dt;if(banner.t>1.5)banner=null}
-  if(teacher&&phase==='aim'){teacher.t-=dt;const s=Math.ceil(teacher.t);if(s<teacher.lastSec&&s>0){teacher.lastSec=s;sfx.step()}
-    if(teacher.t<=0){teacher=null;drag=null;phase='skip';sfx.skip();hint(`Too slow! The teacher saw ${pens[cur].name}. Turn skipped.`);
-      const id=gameId;setTimeout(()=>{if(id===gameId&&phase==='skip')endTurn(true)},1200)}}
-  if(aiAnim){aiAnim.t+=dt;if(aiAnim.t>=.75){const a=aiAnim;aiAnim=null;if(a.id===gameId&&phase==='cpu')shoot(pens[cur],a.anchor,a.dir,a.power)}}
-  const sub=8;for(let i=0;i<sub;i++)step(dt/sub);
-  for(const p of pens)if(p.fall>=0&&p.fall<1){p.fall=Math.min(1,p.fall+dt*2);p.x+=p.vx*dt*.4;p.y+=p.vy*dt*.4;p.a+=p.w*dt*.4}
-  for(const o of obst)if(o.gone&&o.fade>0){o.fade=Math.max(0,o.fade-dt*2);o.x+=o.vx*dt*.4;o.y+=o.vy*dt*.4;o.a+=o.w*dt*.4}
-  chips=chips.filter(c=>{c.x+=c.vx*dt;c.y+=c.vy*dt;c.vx*=.92;c.vy*=.92;c.life-=dt*1.4;return c.life>0});
-  if(phase==='moving'&&now-shotAt>350){
-    const busy=pens.some(p=>(p.alive&&(p.vx||p.vy||p.w))||(p.fall>=0&&p.fall<1))||obst.some(o=>(!o.gone&&(o.vx||o.vy||o.w))||(o.gone&&o.fade>0));
-    if(!busy)endTurn(false);
-  }
-  if(phase==='shrink'){
-    shrinkT=Math.min(1,shrinkT+dt/.7);const e=1-Math.pow(1-shrinkT,3);
-    for(const k of ['x0','y0','x1','y1'])B[k]=Bfrom[k]+(Bto[k]-Bfrom[k])*e;
-    if(Math.random()<.6){const side=Math.floor(Math.random()*4),t=Math.random();
-      const x=side<2?B.x0+(B.x1-B.x0)*t:side===2?B.x0:B.x1,y=side>=2?B.y0+(B.y1-B.y0)*t:side===0?B.y0:B.y1;
-      chips.push({x,y,vx:(Math.random()-.5)*20,vy:(Math.random()-.5)*20,life:1,col:'#7a4a22',sz:.6+Math.random()})}
-    if(shrinkT>=1){
-      for(const p of pens)if(p.alive&&(p.x<B.x0||p.x>B.x1||p.y<B.y0||p.y>B.y1)){
-        if(p.shield){p.shield=false;p.x=clamp(p.x,B.x0+1,B.x1-1);p.y=clamp(p.y,B.y0+1,B.y1-1);sfx.shield();showBanner('SHIELD SAVE',POWERS.shield.col)}
-        else{p.alive=false;p.fall=0;p.vx=p.vy=0;sfx.fall();hint(`${p.name} went down with the desk!`)}}
-      for(const o of obst)if(!o.gone&&outside(o)){o.gone=true;o.fade=1;o.vx=o.vy=o.w=0}
-      blots=blots.filter(b=>b.x>B.x0+2&&b.x<B.x1-2&&b.y>B.y0+2&&b.y<B.y1-2);
-      renderChips();phase='settle';
-    }
-  }
-  if(phase==='settle'&&!pens.some(p=>p.fall>=0&&p.fall<1))afterShrink();
-  draw(now);requestAnimationFrame(frame);
-}
+        // ---------- input ----------
+        function toWorld(e) {
+          return [(e.clientX - ox) / S, (e.clientY - oy) / S];
+        }
+        function canAim() {
+          return (
+            phase === "aim" &&
+            !!pens[cur] &&
+            (NET.mode === "local" || (cur === NET.mySeat && !NET.sent))
+          );
+        }
+        cv.addEventListener("pointerdown", (e) => {
+          initAudio();
+          if (!canAim()) return;
+          const p = pens[cur];
+          const [wx, wy] = toWorld(e);
+          const ax = Math.cos(p.a),
+            ay = Math.sin(p.a);
+          const s = clamp((wx - p.x) * ax + (wy - p.y) * ay, -p.hl, p.hl);
+          const px = p.x + ax * s,
+            py = p.y + ay * s;
+          const near = Math.hypot(wx - px, wy - py) < p.r + 7;
+          drag = {
+            anchor: near ? [px, py] : [p.x, p.y],
+            start: [wx, wy],
+            pt: [wx, wy],
+            id: e.pointerId,
+          };
+          try {
+            cv.setPointerCapture(e.pointerId);
+          } catch (_) {}
+        });
+        cv.addEventListener("pointermove", (e) => {
+          if (!drag || e.pointerId !== drag.id) return;
+          drag.pt = toWorld(e);
+          if (NET.mode === "client") {
+            const now = performance.now();
+            if (now - NET.lastAimSend > 60) {
+              NET.lastAimSend = now;
+              sendHost({
+                t: "aim",
+                a: drag.anchor,
+                p: [drag.start[0] - drag.pt[0], drag.start[1] - drag.pt[1]],
+              });
+            }
+          }
+        });
+        cv.addEventListener("pointerup", (e) => {
+          if (!drag || e.pointerId !== drag.id) return;
+          const dx = drag.start[0] - drag.pt[0],
+            dy = drag.start[1] - drag.pt[1],
+            len = Math.hypot(dx, dy);
+          const power = Math.min(len / MAXPULL, 1),
+            a = drag.anchor;
+          drag = null;
+          if (!canAim()) return;
+          if (power < 0.08) {
+            if (NET.mode === "client") sendHost({ t: "aim", a: null });
+            return;
+          }
+          const dir = [dx / len, dy / len];
+          if (NET.mode === "client") {
+            NET.sent = true;
+            NET.sentAt = performance.now();
+            sendHost({ t: "shot", a, d: dir, pw: power });
+            return;
+          }
+          shoot(pens[cur], a, dir, power);
+        });
+        cv.addEventListener("pointercancel", () => {
+          drag = null;
+          if (NET.mode === "client") sendHost({ t: "aim", a: null });
+        });
 
-// ---------- menus ----------
-function renderSetup(){
-  [2,3,4].forEach(n=>$('n'+n).setAttribute('aria-pressed',String(n===count)));
-  $('slots').innerHTML=Array.from({length:count},(_,i)=>`<div class="slot"><i style="background:${PENS[i].base}"></i><span class="nm">${PENS[i].name}</span>
+        // ---------- physics ----------
+        function closest(A, Bs) {
+          const d1x = A[2] - A[0],
+            d1y = A[3] - A[1],
+            d2x = Bs[2] - Bs[0],
+            d2y = Bs[3] - Bs[1],
+            rx = A[0] - Bs[0],
+            ry = A[1] - Bs[1];
+          const a = d1x * d1x + d1y * d1y,
+            e = d2x * d2x + d2y * d2y,
+            f = d2x * rx + d2y * ry,
+            c = d1x * rx + d1y * ry,
+            b = d1x * d2x + d1y * d2y;
+          let s, t;
+          if (e < 1e-9) {
+            t = 0;
+            s = a < 1e-9 ? 0 : clamp(-c / a, 0, 1);
+          } else {
+            const den = a * e - b * b;
+            s = den > 1e-9 ? clamp((b * f - c * e) / den, 0, 1) : 0;
+            t = (b * s + f) / e;
+            if (t < 0) {
+              t = 0;
+              s = clamp(-c / a, 0, 1);
+            } else if (t > 1) {
+              t = 1;
+              s = clamp((b - c) / a, 0, 1);
+            }
+          }
+          return [
+            A[0] + d1x * s,
+            A[1] + d1y * s,
+            Bs[0] + d2x * t,
+            Bs[1] + d2y * t,
+          ];
+        }
+        const mass = (p) => p.m * (p.heavyOn ? 3 : 1);
+        const inert = (p, m) => m * ((p.hl * p.hl) / 3 + (p.r * p.r) / 2);
+        const outside = (p) =>
+          p.x < B.x0 || p.x > B.x1 || p.y < B.y0 || p.y > B.y1;
+        function collide(A, Bp) {
+          const [ax, ay, bx, by] = closest(seg(A), seg(Bp));
+          let nx = ax - bx,
+            ny = ay - by,
+            d = Math.hypot(nx, ny);
+          const rr = A.r + Bp.r;
+          if (d >= rr) return;
+          if (d < 1e-6) {
+            nx = -Math.sin(Bp.a);
+            ny = Math.cos(Bp.a);
+            d = 1e-6;
+          } else {
+            nx /= d;
+            ny /= d;
+          }
+          const mA = mass(A),
+            mB = mass(Bp),
+            pen = rr - d,
+            share = mB / (mA + mB);
+          A.x += nx * pen * share;
+          A.y += ny * pen * share;
+          Bp.x -= nx * pen * (1 - share);
+          Bp.y -= ny * pen * (1 - share);
+          const cx = bx + nx * Bp.r,
+            cy = by + ny * Bp.r;
+          const rax = cx - A.x,
+            ray = cy - A.y,
+            rbx = cx - Bp.x,
+            rby = cy - Bp.y;
+          const IA = inert(A, mA),
+            IB = inert(Bp, mB);
+          const vax = A.vx - A.w * ray,
+            vay = A.vy + A.w * rax,
+            vbx = Bp.vx - Bp.w * rby,
+            vby = Bp.vy + Bp.w * rbx;
+          const vn = (vax - vbx) * nx + (vay - vby) * ny;
+          if (vn >= 0) return;
+          const ca = rax * ny - ray * nx,
+            cb = rbx * ny - rby * nx,
+            e = (A.rest + Bp.rest) / 2;
+          const j =
+            (-(1 + e) * vn) /
+            (1 / mA + 1 / mB + (ca * ca) / IA + (cb * cb) / IB);
+          A.vx += (j * nx) / mA;
+          A.vy += (j * ny) / mA;
+          A.w += (ca * j) / IA;
+          Bp.vx -= (j * nx) / mB;
+          Bp.vy -= (j * ny) / mB;
+          Bp.w -= (cb * j) / IB;
+          const o = A.kind ? A : Bp.kind ? Bp : null;
+          if (o) play("obj", o.kind, -vn);
+          else play("clack", -vn, A.heavyOn || Bp.heavyOn);
+          if (A.heavyOn || Bp.heavyOn) kick(6);
+        }
+        function step(h) {
+          const live = pens.filter((p) => p.alive),
+            objs = obst.filter((o) => !o.gone),
+            all = live.concat(objs);
+          for (const p of all) {
+            p.x += p.vx * h;
+            p.y += p.vy * h;
+            p.a += p.w * h;
+            const f = Math.exp(-p.fr * h);
+            p.vx *= f;
+            p.vy *= f;
+            const sp = Math.hypot(p.vx, p.vy);
+            if (sp > 0) {
+              const ns = Math.max(0, sp - p.dec * h);
+              p.vx *= ns / sp;
+              p.vy *= ns / sp;
+            }
+            p.w *= Math.exp(-p.afr * h);
+            p.w -= Math.sign(p.w) * Math.min(Math.abs(p.w), 1.2 * h);
+            if (sp < 0.6 && Math.abs(p.w) < 0.2) {
+              p.vx = p.vy = p.w = 0;
+            }
+          }
+          for (let i = 0; i < all.length; i++)
+            for (let k = i + 1; k < all.length; k++) collide(all[i], all[k]);
+          for (const p of live) {
+            if (p.vx === 0 && p.vy === 0) continue;
+            for (let k = blots.length - 1; k >= 0; k--) {
+              const b = blots[k];
+              const [ax, ay] = closest(seg(p), [b.x, b.y, b.x, b.y]);
+              if (Math.hypot(ax - b.x, ay - b.y) < b.r + p.r * 0.4) {
+                blots.splice(k, 1);
+                grant(p, b);
+              }
+            }
+          }
+          for (const p of live) {
+            if (outside(p)) {
+              if (p.shield) {
+                p.shield = false;
+                if (p.x < B.x0) {
+                  p.x = B.x0 + 1;
+                  p.vx = Math.abs(p.vx) * 0.5;
+                }
+                if (p.x > B.x1) {
+                  p.x = B.x1 - 1;
+                  p.vx = -Math.abs(p.vx) * 0.5;
+                }
+                if (p.y < B.y0) {
+                  p.y = B.y0 + 1;
+                  p.vy = Math.abs(p.vy) * 0.5;
+                }
+                if (p.y > B.y1) {
+                  p.y = B.y1 - 1;
+                  p.vy = -Math.abs(p.vy) * 0.5;
+                }
+                play("shield");
+                hint(`${p.name}'s shield saved it!`);
+                showBanner("SHIELD SAVE", POWERS.shield.col);
+                renderChips();
+                continue;
+              }
+              p.alive = false;
+              p.fall = 0;
+              play("fall");
+              hint(`${p.name} fell off the desk!`);
+              renderChips();
+            }
+          }
+          for (const o of objs)
+            if (outside(o)) {
+              o.gone = true;
+              o.fade = 1;
+              play("objFall");
+            }
+        }
+        function grant(p, b) {
+          const opts = ["double", "heavy", "shield"].filter((k) => !p[k]);
+          if (!opts.length) return;
+          const k = opts[Math.floor(Math.random() * opts.length)];
+          p[k] = true;
+          play("power");
+          burst(b.x, b.y);
+          if (NET.mode === "host") NET.ev.push(["g", b.x, b.y]);
+          hint(`${p.name} got ${POWERS[k].label}!`);
+          showBanner(POWERS[k].label.toUpperCase(), POWERS[k].col);
+          renderChips();
+        }
+
+        // ---------- drawing ----------
+        const X = (x) => ox + x * S,
+          Y = (y) => oy + y * S;
+        function capsule(x, y, w, h, r) {
+          ctx.beginPath();
+          ctx.moveTo(x + r, y);
+          ctx.lineTo(x + w - r, y);
+          ctx.arc(x + w - r, y + r, r, -Math.PI / 2, Math.PI / 2);
+          ctx.lineTo(x + r, y + h);
+          ctx.arc(x + r, y + r, r, Math.PI / 2, Math.PI * 1.5);
+          ctx.closePath();
+        }
+        function rrect(x, y, w, h, r) {
+          ctx.beginPath();
+          ctx.moveTo(x + r, y);
+          ctx.arcTo(x + w, y, x + w, y + h, r);
+          ctx.arcTo(x + w, y + h, x, y + h, r);
+          ctx.arcTo(x, y + h, x, y, r);
+          ctx.arcTo(x, y, x + w, y, r);
+          ctx.closePath();
+        }
+        const grad = (R, c1, c2, c3) => {
+          const g = ctx.createLinearGradient(0, -R, 0, R);
+          g.addColorStop(0, c1);
+          g.addColorStop(0.45, c2);
+          g.addColorStop(1, c3);
+          return g;
+        };
+        function drawPen(p, scale, alpha, halo) {
+          const cx = X(p.x),
+            cy = Y(p.y),
+            L = p.hl * S,
+            R = p.r * S;
+          ctx.save();
+          ctx.globalAlpha = alpha;
+          ctx.save();
+          ctx.translate(cx + R * 0.9, cy + R * 1.3);
+          ctx.rotate(p.a);
+          ctx.scale(scale, scale);
+          ctx.fillStyle = "rgba(35,15,2,.35)";
+          capsule(-L, -R, 2 * L, 2 * R, R);
+          ctx.fill();
+          ctx.restore();
+          ctx.translate(cx, cy);
+          ctx.rotate(p.a);
+          ctx.scale(scale, scale);
+          if (halo) {
+            ctx.save();
+            ctx.shadowColor = "#ffe08a";
+            ctx.shadowBlur = 16 + pulse * 10;
+            ctx.strokeStyle = `rgba(255,224,138,${0.55 + pulse * 0.4})`;
+            ctx.lineWidth = 3;
+            capsule(-L - 4, -R - 4, 2 * L + 8, 2 * R + 8, R + 4);
+            ctx.stroke();
+            ctx.restore();
+          }
+          if (p.heavyOn || p.heavy) {
+            ctx.save();
+            ctx.shadowColor = "#ffa94d";
+            ctx.shadowBlur = p.heavyOn ? 22 : 10;
+            ctx.strokeStyle = `rgba(255,169,77,${p.heavyOn ? 0.9 : 0.5})`;
+            ctx.lineWidth = 2;
+            capsule(-L - 2, -R - 2, 2 * L + 4, 2 * R + 4, R + 2);
+            ctx.stroke();
+            ctx.restore();
+          }
+          if (p.type === "pencil") {
+            ctx.fillStyle = grad(R, p.light, p.base, p.dark);
+            ctx.fillRect(-L + R * 3, -R, 2 * L - R * 4.6, 2 * R);
+            ctx.fillStyle = "rgba(255,255,255,.25)";
+            ctx.fillRect(-L + R * 3, -R * 0.45, 2 * L - R * 4.6, R * 0.25);
+            ctx.fillStyle = "rgba(0,0,0,.2)";
+            ctx.fillRect(-L + R * 3, R * 0.35, 2 * L - R * 4.6, R * 0.2);
+            ctx.fillStyle = "#e8c18f";
+            ctx.beginPath();
+            ctx.moveTo(-L + R * 3, -R);
+            ctx.lineTo(-L + R * 0.8, -R * 0.3);
+            ctx.lineTo(-L + R * 0.8, R * 0.3);
+            ctx.lineTo(-L + R * 3, R);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = "#333";
+            ctx.beginPath();
+            ctx.moveTo(-L + R * 1.4, -R * 0.48);
+            ctx.lineTo(-L, 0);
+            ctx.lineTo(-L + R * 1.4, R * 0.48);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = grad(R, "#fafafa", "#c8ccd2", "#868b93");
+            ctx.fillRect(L - R * 1.6, -R, R * 0.9, 2 * R);
+            ctx.fillStyle = grad(R, "#ffc2cf", "#f08ba3", "#c45f78");
+            capsule(L - R * 0.9, -R, R * 0.9 + R * 0.01, 2 * R, R * 0.45);
+            ctx.fill();
+          } else if (p.type === "marker") {
+            ctx.fillStyle = p.base;
+            ctx.fillRect(-L, -R * 0.45, R * 1.2, R * 0.9);
+            ctx.fillStyle = grad(R, "#ffffff", "#eef0f3", "#a8adb6");
+            capsule(-L + R * 1, -R, L * 1.25, 2 * R, R * 0.7);
+            ctx.fill();
+            ctx.fillStyle = p.base;
+            ctx.fillRect(-L + L * 0.45, -R * 0.75, L * 0.5, R * 1.5);
+            ctx.fillStyle = "rgba(255,255,255,.85)";
+            ctx.fillRect(-L + L * 0.52, -R * 0.18, L * 0.36, R * 0.36);
+            ctx.fillStyle = grad(R, p.light, p.base, p.dark);
+            capsule(L * 0.15, -R * 1.08, L * 0.85, R * 2.16, R * 0.9);
+            ctx.fill();
+            ctx.fillStyle = "rgba(0,0,0,.2)";
+            for (let k = 0; k < 3; k++)
+              ctx.fillRect(L * 0.25 + k * L * 0.1, -R * 1.08, 1.5, R * 2.16);
+          } else {
+            ctx.fillStyle = grad(R, "#ffffff", "#e6e9ee", "#9aa0aa");
+            capsule(-L + R * 2.4, -R, 2 * L - R * 2.4, 2 * R, R);
+            ctx.fill();
+            ctx.fillStyle = p.base;
+            ctx.globalAlpha = alpha * 0.85;
+            ctx.fillRect(-L + R * 2.6, -R * 0.28, L * 1.1, R * 0.56);
+            ctx.globalAlpha = alpha;
+            ctx.fillStyle = grad(R, p.light, p.base, p.dark);
+            ctx.fillRect(-L + R * 2.4, -R * 1.05, L * 0.42, R * 2.1);
+            for (let k = 1; k < 5; k++) {
+              ctx.fillStyle = "rgba(0,0,0,.18)";
+              ctx.fillRect(
+                -L + R * 2.4 + k * L * 0.08,
+                -R * 1.05,
+                1.2,
+                R * 2.1,
+              );
+            }
+            ctx.fillStyle = grad(R, "#f2f2f2", "#b8bcc4", "#6e737c");
+            ctx.beginPath();
+            ctx.moveTo(-L + R * 2.4, -R * 0.9);
+            ctx.lineTo(-L + R * 0.4, -R * 0.25);
+            ctx.lineTo(-L + R * 0.4, R * 0.25);
+            ctx.lineTo(-L + R * 2.4, R * 0.9);
+            ctx.closePath();
+            ctx.fill();
+            ctx.fillStyle = "#2a2a2a";
+            ctx.beginPath();
+            ctx.arc(-L + R * 0.35, 0, R * 0.28, 0, TAU);
+            ctx.fill();
+            ctx.fillStyle = grad(R, p.light, p.base, p.dark);
+            capsule(L * 0.38, -R * 1.12, L * 0.62, R * 2.24, R * 1.1);
+            ctx.fill();
+            ctx.fillStyle = grad(R, "#ffffff", "#cfd3da", "#8b9099");
+            capsule(L * 0.48, -R * 0.32, L * 0.46, R * 0.64, R * 0.32);
+            ctx.fill();
+            ctx.strokeStyle = "rgba(255,255,255,.55)";
+            ctx.lineWidth = Math.max(1, R * 0.25);
+            ctx.beginPath();
+            ctx.moveTo(-L + R * 3, -R * 0.55);
+            ctx.lineTo(L * 0.3, -R * 0.55);
+            ctx.stroke();
+          }
+          ctx.restore();
+        }
+        function drawBadges(p) {
+          const cx = X(p.x),
+            cy = Y(p.y);
+          if (p.shield) {
+            ctx.save();
+            ctx.strokeStyle = POWERS.shield.col;
+            ctx.globalAlpha = 0.45 + pulse * 0.35;
+            ctx.lineWidth = 2.5;
+            ctx.setLineDash([6, 5]);
+            ctx.beginPath();
+            ctx.arc(cx, cy, (p.hl + 2) * S, 0, TAU);
+            ctx.stroke();
+            ctx.restore();
+          }
+          const tags = ["double", "heavy", "shield"].filter((k) => p[k]);
+          if (!tags.length) return;
+          ctx.font = "800 10px Nunito, sans-serif";
+          let tw = 0;
+          const ws = tags.map((k) => ctx.measureText(POWERS[k].tag).width + 10);
+          tw = ws.reduce((a, b) => a + b, 0) + (tags.length - 1) * 3;
+          let x = cx - tw / 2;
+          const y = cy - Math.max(p.r * S + 16, 22);
+          tags.forEach((k, i) => {
+            ctx.fillStyle = POWERS[k].col;
+            rrect(x, y - 8, ws[i], 16, 6);
+            ctx.fill();
+            ctx.fillStyle = "#14181a";
+            ctx.textAlign = "center";
+            ctx.fillText(POWERS[k].tag, x + ws[i] / 2, y + 4);
+            x += ws[i] + 3;
+          });
+        }
+        function drawObstacle(o) {
+          const cx = X(o.x),
+            cy = Y(o.y),
+            L = o.hl * S,
+            R = o.r * S;
+          ctx.save();
+          ctx.globalAlpha = o.fade;
+          ctx.save();
+          ctx.translate(cx + 3, cy + 4);
+          ctx.rotate(o.a);
+          ctx.fillStyle = "rgba(35,15,2,.38)";
+          if (o.kind === "coin") {
+            ctx.beginPath();
+            ctx.arc(0, 0, R, 0, TAU);
+            ctx.fill();
+          } else {
+            rrect(-L - R, -R, 2 * (L + R), 2 * R, R * 0.45);
+            ctx.fill();
+          }
+          ctx.restore();
+          ctx.translate(cx, cy);
+          ctx.rotate(o.a);
+          if (o.kind === "eraser") {
+            ctx.fillStyle = grad(R, "#ffffff", "#f3efe6", "#c9c2b4");
+            rrect(-L - R, -R, 2 * (L + R), 2 * R, R * 0.45);
+            ctx.fill();
+            ctx.fillStyle = grad(R, "#5d93ea", "#2f6fd0", "#1d4d99");
+            ctx.fillRect(-L * 0.55 - R * 0.2, -R, L * 1.1 + R * 1.2, 2 * R);
+            ctx.fillStyle = "rgba(255,255,255,.9)";
+            ctx.fillRect(
+              -L * 0.55 - R * 0.2,
+              -R * 0.18,
+              L * 1.1 + R * 1.2,
+              R * 0.36,
+            );
+          } else if (o.kind === "sharpener") {
+            ctx.fillStyle = grad(R, "#f4f6f8", "#b9bec6", "#7a8089");
+            rrect(-L - R, -R, 2 * (L + R), 2 * R, R * 0.35);
+            ctx.fill();
+            ctx.fillStyle = "#2b2b2b";
+            ctx.beginPath();
+            ctx.arc(-L - R * 0.25, 0, R * 0.45, 0, TAU);
+            ctx.fill();
+            ctx.strokeStyle = "#5f646c";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.moveTo(-L + R * 0.3, -R * 0.7);
+            ctx.lineTo(L + R * 0.6, -R * 0.2);
+            ctx.stroke();
+            ctx.fillStyle = "#8b9099";
+            ctx.beginPath();
+            ctx.arc(L * 0.5 + R * 0.3, R * 0.35, R * 0.18, 0, TAU);
+            ctx.fill();
+          } else {
+            const g = ctx.createRadialGradient(
+              -R * 0.3,
+              -R * 0.3,
+              R * 0.1,
+              0,
+              0,
+              R,
+            );
+            g.addColorStop(0, "#fff1b8");
+            g.addColorStop(0.6, "#e0b23e");
+            g.addColorStop(1, "#a67a16");
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(0, 0, R, 0, TAU);
+            ctx.fill();
+            ctx.strokeStyle = "rgba(120,80,10,.6)";
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.arc(0, 0, R * 0.74, 0, TAU);
+            ctx.stroke();
+            ctx.fillStyle = "rgba(110,70,5,.75)";
+            ctx.font = `800 ${Math.round(R * 0.8)}px Nunito, sans-serif`;
+            ctx.textAlign = "center";
+            ctx.textBaseline = "middle";
+            ctx.fillText("50", 0, 1);
+          }
+          ctx.restore();
+        }
+        function drawBlot(b, now) {
+          const cx = X(b.x),
+            cy = Y(b.y),
+            R =
+              b.r *
+              S *
+              (1 + Math.sin(now / 300) * 0.05) *
+              clamp((performance.now() - b.born) / 300, 0.05, 1);
+          ctx.save();
+          ctx.translate(cx, cy);
+          ctx.fillStyle = "rgba(40,44,140,.88)";
+          ctx.beginPath();
+          const n = b.pts.length;
+          for (let k = 0; k <= n; k++) {
+            const a = (k / n) * TAU,
+              r = R * b.pts[k % n];
+            k
+              ? ctx.lineTo(Math.cos(a) * r, Math.sin(a) * r)
+              : ctx.moveTo(Math.cos(a) * r, Math.sin(a) * r);
+          }
+          ctx.closePath();
+          ctx.fill();
+          for (const d of b.drops) {
+            ctx.beginPath();
+            ctx.arc(d[0] * R * 0.75, d[1] * R * 0.75, d[2] * R, 0, TAU);
+            ctx.fill();
+          }
+          ctx.fillStyle = "rgba(255,255,255,.25)";
+          ctx.beginPath();
+          ctx.ellipse(-R * 0.3, -R * 0.35, R * 0.28, R * 0.14, -0.5, 0, TAU);
+          ctx.fill();
+          ctx.fillStyle = "#fff";
+          ctx.font = `${Math.round(R * 1.1)}px "Patrick Hand", cursive`;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText("?", 0, R * 0.06);
+          ctx.restore();
+        }
+        function deskPath() {
+          const full = B.x0 === 0 && B.y0 === 0 && B.x1 === TW && B.y1 === TH;
+          ctx.beginPath();
+          if (full) {
+            ctx.rect(X(0), Y(0), TW * S, TH * S);
+            return;
+          }
+          const N = jag.N;
+          for (let k = 0; k <= N; k++) {
+            const x = B.x0 + ((B.x1 - B.x0) * k) / N;
+            ctx[k ? "lineTo" : "moveTo"](
+              X(x),
+              Y(B.y0 + (B.y0 > 0 ? jag.t[k] : 0)),
+            );
+          }
+          for (let k = 1; k <= N; k++) {
+            const y = B.y0 + ((B.y1 - B.y0) * k) / N;
+            ctx.lineTo(X(B.x1 - (B.x1 < TW ? jag.r[k] : 0)), Y(y));
+          }
+          for (let k = 1; k <= N; k++) {
+            const x = B.x1 - ((B.x1 - B.x0) * k) / N;
+            ctx.lineTo(X(x), Y(B.y1 - (B.y1 < TH ? jag.b[k] : 0)));
+          }
+          for (let k = 1; k <= N; k++) {
+            const y = B.y1 - ((B.y1 - B.y0) * k) / N;
+            ctx.lineTo(X(B.x0 + (B.x0 > 0 ? jag.l[k] : 0)), Y(y));
+          }
+          ctx.closePath();
+        }
+        function drawAim(anchor, pull, power) {
+          const ax = X(anchor[0]),
+            ay = Y(anchor[1]),
+            len = Math.hypot(pull[0], pull[1]) || 1,
+            ux = pull[0] / len,
+            uy = pull[1] / len;
+          ctx.strokeStyle = "rgba(255,255,255,.55)";
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(
+            ax - ux * power * MAXPULL * S * 0.9,
+            ay - uy * power * MAXPULL * S * 0.9,
+          );
+          ctx.stroke();
+          ctx.fillStyle = "rgba(255,255,255,.8)";
+          ctx.beginPath();
+          ctx.arc(
+            ax - ux * power * MAXPULL * S * 0.9,
+            ay - uy * power * MAXPULL * S * 0.9,
+            6,
+            0,
+            TAU,
+          );
+          ctx.fill();
+          const col =
+            power < 0.5
+              ? `hsl(${130 - power * 120},80%,60%)`
+              : `hsl(${70 - (power - 0.5) * 140},90%,58%)`;
+          const al = ((18 + power * 55) * S) / 3.5;
+          ctx.strokeStyle = col;
+          ctx.lineWidth = 4;
+          ctx.setLineDash([8, 7]);
+          ctx.beginPath();
+          ctx.moveTo(ax, ay);
+          ctx.lineTo(ax + ux * al, ay + uy * al);
+          ctx.stroke();
+          ctx.setLineDash([]);
+          ctx.fillStyle = col;
+          ctx.beginPath();
+          const hx = ax + ux * al,
+            hy = ay + uy * al;
+          ctx.moveTo(hx + ux * 14, hy + uy * 14);
+          ctx.lineTo(hx - uy * 9, hy + ux * 9);
+          ctx.lineTo(hx + uy * 9, hy - ux * 9);
+          ctx.closePath();
+          ctx.fill();
+          ctx.font = "800 14px Nunito, sans-serif";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "alphabetic";
+          ctx.fillStyle = "#fff";
+          ctx.fillText(
+            Math.round(power * 100) + "%",
+            hx + ux * 30,
+            hy + uy * 30 + 5,
+          );
+          ctx.fillStyle = col;
+          ctx.beginPath();
+          ctx.arc(ax, ay, 4, 0, TAU);
+          ctx.fill();
+        }
+        function drawTeacher() {
+          const sec = Math.ceil(teacher.t);
+          const a = 0.25 + 0.25 * Math.sin(performance.now() / 120);
+          const g = ctx.createRadialGradient(
+            W / 2,
+            H / 2,
+            Math.min(W, H) * 0.35,
+            W / 2,
+            H / 2,
+            Math.max(W, H) * 0.75,
+          );
+          g.addColorStop(0, "rgba(220,40,40,0)");
+          g.addColorStop(1, `rgba(220,40,40,${a})`);
+          ctx.fillStyle = g;
+          ctx.fillRect(0, 0, W, H);
+          const bw = Math.min(W - 40, 300),
+            bx = (W - bw) / 2,
+            by = Y(B.y0) + 14;
+          ctx.fillStyle = "#c62828";
+          rrect(bx, by, bw, 64, 14);
+          ctx.fill();
+          ctx.fillStyle = "#fff";
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.font = '26px "Patrick Hand", cursive';
+          ctx.fillText("TEACHER'S COMING!", W / 2 - 22, by + 24);
+          ctx.font = "800 13px Nunito, sans-serif";
+          ctx.fillText("Flick before time runs out", W / 2 - 22, by + 47);
+          ctx.beginPath();
+          ctx.arc(bx + bw - 34, by + 32, 22, 0, TAU);
+          ctx.fillStyle = "#fff";
+          ctx.fill();
+          ctx.strokeStyle = "#ffcc4d";
+          ctx.lineWidth = 5;
+          ctx.beginPath();
+          ctx.arc(
+            bx + bw - 34,
+            by + 32,
+            22,
+            -Math.PI / 2,
+            -Math.PI / 2 + TAU * (teacher.t / 3),
+          );
+          ctx.stroke();
+          ctx.fillStyle = "#c62828";
+          ctx.font = "800 22px Nunito, sans-serif";
+          ctx.fillText(sec, bx + bw - 34, by + 33);
+        }
+        function drawBanner() {
+          const k = banner.t,
+            a =
+              k < 0.15
+                ? k / 0.15
+                : k > 1.1
+                  ? Math.max(0, 1 - (k - 1.1) / 0.3)
+                  : 1;
+          if (a <= 0) return;
+          const s = 0.8 + 0.2 * Math.min(1, k / 0.15);
+          ctx.save();
+          ctx.globalAlpha = a;
+          ctx.translate(W / 2, Y(B.y0 + (B.y1 - B.y0) / 2));
+          ctx.scale(s, s);
+          ctx.rotate(-0.04);
+          ctx.font = '40px "Patrick Hand", cursive';
+          const tw = ctx.measureText(banner.txt).width + 36;
+          ctx.fillStyle = "rgba(20,22,24,.78)";
+          rrect(-tw / 2, -30, tw, 60, 12);
+          ctx.fill();
+          ctx.fillStyle = banner.col;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
+          ctx.fillText(banner.txt, 0, 2);
+          ctx.restore();
+        }
+        function draw(now) {
+          ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+          let sx = 0,
+            sy = 0;
+          if (shake > 0) {
+            sx = (Math.random() - 0.5) * shake;
+            sy = (Math.random() - 0.5) * shake;
+          }
+          ctx.fillStyle = "#26302f";
+          ctx.fillRect(0, 0, W, H);
+          ctx.strokeStyle = "rgba(255,255,255,.035)";
+          ctx.lineWidth = 1;
+          const tile = 48;
+          for (let x = (W / 2) % tile; x < W; x += tile) {
+            ctx.beginPath();
+            ctx.moveTo(x, 0);
+            ctx.lineTo(x, H);
+            ctx.stroke();
+          }
+          for (let y = (H / 2) % tile; y < H; y += tile) {
+            ctx.beginPath();
+            ctx.moveTo(0, y);
+            ctx.lineTo(W, y);
+            ctx.stroke();
+          }
+          ctx.translate(sx, sy);
+          for (const p of pens)
+            if (p.fall >= 0 && p.fall < 1)
+              drawPen(p, 1 - p.fall * 0.45, 1 - p.fall, false);
+          for (const o of obst) if (o.gone && o.fade > 0) drawObstacle(o);
+          ctx.save();
+          ctx.shadowColor = "rgba(0,0,0,.55)";
+          ctx.shadowBlur = 30;
+          ctx.shadowOffsetY = 12;
+          ctx.fillStyle = "#8a5a30";
+          deskPath();
+          ctx.fill();
+          ctx.restore();
+          ctx.save();
+          deskPath();
+          ctx.clip();
+          if (wood) ctx.drawImage(wood, X(0), Y(0), TW * S, TH * S);
+          ctx.restore();
+          if (B.x0 > 0 || B.y0 > 0 || B.x1 < TW || B.y1 < TH) {
+            ctx.strokeStyle = "#4a2a10";
+            ctx.lineWidth = 3;
+            deskPath();
+            ctx.stroke();
+            ctx.strokeStyle = "rgba(255,215,160,.35)";
+            ctx.lineWidth = 1;
+            deskPath();
+            ctx.stroke();
+          }
+          for (const b of blots) drawBlot(b, now);
+          for (const o of obst) if (!o.gone) drawObstacle(o);
+          for (const p of pens)
+            if (p.alive)
+              drawPen(
+                p,
+                1,
+                1,
+                (phase === "aim" || phase === "cpu") && p.i === cur,
+              );
+          for (const p of pens) if (p.alive) drawBadges(p);
+          for (const c of chips) {
+            ctx.globalAlpha = c.life;
+            ctx.fillStyle = c.col;
+            ctx.fillRect(
+              X(c.x) - (c.sz * S) / 2,
+              Y(c.y) - (c.sz * S) / 2,
+              c.sz * S,
+              c.sz * S,
+            );
+          }
+          ctx.globalAlpha = 1;
+          if (drag && phase === "aim") {
+            const pull = [
+              drag.start[0] - drag.pt[0],
+              drag.start[1] - drag.pt[1],
+            ];
+            const pw = Math.min(Math.hypot(...pull) / MAXPULL, 1);
+            if (pw > 0.03) drawAim(drag.anchor, pull, pw);
+          }
+          if (aiAnim) {
+            const k = Math.min(aiAnim.t / 0.6, 1),
+              e = 1 - Math.pow(1 - k, 3);
+            drawAim(
+              aiAnim.anchor,
+              [
+                aiAnim.dir[0] * e * aiAnim.power * MAXPULL,
+                aiAnim.dir[1] * e * aiAnim.power * MAXPULL,
+              ],
+              aiAnim.power * e,
+            );
+          }
+          if (!drag && !aiAnim) {
+            const ra =
+              NET.mode === "host"
+                ? NET.remoteAim
+                : NET.mode === "client"
+                  ? NET.aim
+                  : null;
+            if (ra && ra.a && (phase === "aim" || phase === "cpu")) {
+              const pw = Math.min(Math.hypot(ra.p[0], ra.p[1]) / MAXPULL, 1);
+              if (pw > 0.03) drawAim(ra.a, ra.p, pw);
+            }
+          }
+          ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+          if (teacher && phase === "aim") drawTeacher();
+          if (banner) drawBanner();
+        }
+        function frame(now) {
+          const dt = Math.min(0.033, (now - (lastT || now)) / 1000);
+          lastT = now;
+          pulse = (Math.sin(now / 260) + 1) / 2;
+          if (shake > 0) {
+            shake *= 0.88;
+            if (shake < 0.3) shake = 0;
+          }
+          if (banner) {
+            banner.t += dt;
+            if (banner.t > 1.5) banner = null;
+          }
+          chips = chips.filter((c) => {
+            c.x += c.vx * dt;
+            c.y += c.vy * dt;
+            c.vx *= 0.92;
+            c.vy *= 0.92;
+            c.life -= dt * 1.4;
+            return c.life > 0;
+          });
+          if (NET.mode === "client") clientTick(dt);
+          else {
+            if (teacher && phase === "aim") {
+              teacher.t -= dt;
+              const s = Math.ceil(teacher.t);
+              if (s < teacher.lastSec && s > 0) {
+                teacher.lastSec = s;
+                play("step");
+              }
+              if (teacher.t <= 0) {
+                teacher = null;
+                drag = null;
+                phase = "skip";
+                play("skip");
+                hint(
+                  `Too slow! The teacher saw ${pens[cur].name}. Turn skipped.`,
+                );
+                const id = gameId;
+                setTimeout(() => {
+                  if (id === gameId && phase === "skip") endTurn(true);
+                }, 1200);
+              }
+            }
+            if (aiAnim) {
+              aiAnim.t += dt;
+              if (aiAnim.t >= 0.75) {
+                const a = aiAnim;
+                aiAnim = null;
+                if (a.id === gameId && phase === "cpu")
+                  shoot(pens[cur], a.anchor, a.dir, a.power);
+              }
+            }
+            const sub = 8;
+            for (let i = 0; i < sub; i++) step(dt / sub);
+            for (const p of pens)
+              if (p.fall >= 0 && p.fall < 1) {
+                p.fall = Math.min(1, p.fall + dt * 2);
+                p.x += p.vx * dt * 0.4;
+                p.y += p.vy * dt * 0.4;
+                p.a += p.w * dt * 0.4;
+              }
+            for (const o of obst)
+              if (o.gone && o.fade > 0) {
+                o.fade = Math.max(0, o.fade - dt * 2);
+                o.x += o.vx * dt * 0.4;
+                o.y += o.vy * dt * 0.4;
+                o.a += o.w * dt * 0.4;
+              }
+            if (phase === "moving" && now - shotAt > 350) {
+              const busy =
+                pens.some(
+                  (p) =>
+                    (p.alive && (p.vx || p.vy || p.w)) ||
+                    (p.fall >= 0 && p.fall < 1),
+                ) ||
+                obst.some(
+                  (o) =>
+                    (!o.gone && (o.vx || o.vy || o.w)) ||
+                    (o.gone && o.fade > 0),
+                );
+              if (!busy) endTurn(false);
+            }
+            if (phase === "shrink") {
+              shrinkT = Math.min(1, shrinkT + dt / 0.7);
+              const e = 1 - Math.pow(1 - shrinkT, 3);
+              for (const k of ["x0", "y0", "x1", "y1"])
+                B[k] = Bfrom[k] + (Bto[k] - Bfrom[k]) * e;
+              if (Math.random() < 0.6) edgeChip();
+              if (shrinkT >= 1) {
+                for (const p of pens)
+                  if (
+                    p.alive &&
+                    (p.x < B.x0 || p.x > B.x1 || p.y < B.y0 || p.y > B.y1)
+                  ) {
+                    if (p.shield) {
+                      p.shield = false;
+                      p.x = clamp(p.x, B.x0 + 1, B.x1 - 1);
+                      p.y = clamp(p.y, B.y0 + 1, B.y1 - 1);
+                      play("shield");
+                      showBanner("SHIELD SAVE", POWERS.shield.col);
+                    } else {
+                      p.alive = false;
+                      p.fall = 0;
+                      p.vx = p.vy = 0;
+                      play("fall");
+                      hint(`${p.name} went down with the desk!`);
+                    }
+                  }
+                for (const o of obst)
+                  if (!o.gone && outside(o)) {
+                    o.gone = true;
+                    o.fade = 1;
+                    o.vx = o.vy = o.w = 0;
+                  }
+                blots = blots.filter(
+                  (b) =>
+                    b.x > B.x0 + 2 &&
+                    b.x < B.x1 - 2 &&
+                    b.y > B.y0 + 2 &&
+                    b.y < B.y1 - 2,
+                );
+                renderChips();
+                phase = "settle";
+              }
+            }
+            if (
+              phase === "settle" &&
+              !pens.some((p) => p.fall >= 0 && p.fall < 1)
+            )
+              afterShrink();
+          }
+          if (NET.mode === "host") hostTick(now);
+          draw(now);
+          requestAnimationFrame(frame);
+        }
+
+        // ---------- menus ----------
+        function renderSetup() {
+          [2, 3, 4].forEach((n) =>
+            $("n" + n).setAttribute("aria-pressed", String(n === count)),
+          );
+          $("slots").innerHTML = Array.from(
+            { length: count },
+            (
+              _,
+              i,
+            ) => `<div class="slot"><i style="background:${PENS[i].base}"></i><span class="nm">${PENS[i].name}</span>
     <div class="opts"><button type="button" id="kind${i}" data-k="${i}">${TYPES[kinds[i]].label}</button>
-    <button type="button" id="slot${i}" data-i="${i}" class="${types[i]==='cpu'?'cpu':''}">${types[i]==='cpu'?'Computer':'Player'}</button></div>
-    <small>${TYPES[kinds[i]].desc}</small></div>`).join('');
-}
-function resetScores(){wins=[0,0,0,0];rounds=0}
-$('count').addEventListener('click',e=>{const n=+e.target.dataset.n;if(!n)return;count=n;store.set('count',n);resetScores();renderSetup();placePens(count)});
-$('slots').addEventListener('click',e=>{const d=e.target.dataset;
-  if(d.i!=null){types[d.i]=types[d.i]==='cpu'?'human':'cpu';store.set('types',types.join(','))}
-  else if(d.k!=null){kinds[d.k]=TYPE_KEYS[(TYPE_KEYS.indexOf(kinds[d.k])+1)%TYPE_KEYS.length];store.set('kinds',kinds.join(','))}
-  else return;resetScores();renderSetup();placePens(count)});
-$('go').addEventListener('click',()=>{initAudio();newGame()});
-$('again').addEventListener('click',()=>{initAudio();newGame()});
-$('change').addEventListener('click',()=>{gameId++;phase='setup';teacher=null;$('over').hidden=true;$('setup').hidden=false;hint('');
-  B={x0:0,y0:0,x1:TW,y1:TH};obst=[];blots=[];renderChips();renderSetup();placePens(count)});
+    <button type="button" id="slot${i}" data-i="${i}" class="${types[i] === "cpu" ? "cpu" : ""}">${types[i] === "cpu" ? "Computer" : "Player"}</button></div>
+    <small>${TYPES[kinds[i]].desc}</small></div>`,
+          ).join("");
+        }
+        function resetScores() {
+          wins = [0, 0, 0, 0];
+          rounds = 0;
+        }
+        $("count").addEventListener("click", (e) => {
+          const n = +e.target.dataset.n;
+          if (!n) return;
+          count = n;
+          store.set("count", n);
+          resetScores();
+          renderSetup();
+          placePens(count);
+        });
+        $("slots").addEventListener("click", (e) => {
+          const d = e.target.dataset;
+          if (d.i != null) {
+            types[d.i] = types[d.i] === "cpu" ? "human" : "cpu";
+            store.set("types", types.join(","));
+          } else if (d.k != null) {
+            kinds[d.k] =
+              TYPE_KEYS[(TYPE_KEYS.indexOf(kinds[d.k]) + 1) % TYPE_KEYS.length];
+            store.set("kinds", kinds.join(","));
+          } else return;
+          resetScores();
+          renderSetup();
+          placePens(count);
+        });
+        $("go").addEventListener("click", () => {
+          initAudio();
+          newGame();
+        });
+        $("again").addEventListener("click", () => {
+          initAudio();
+          newGame();
+        });
+        $("change").addEventListener("click", () => {
+          if (NET.mode === "host") {
+            openLobby();
+            broadcastLobby();
+            return;
+          }
+          gameId++;
+          phase = "setup";
+          teacher = null;
+          $("over").hidden = true;
+          $("setup").hidden = false;
+          hint("");
+          B = { x0: 0, y0: 0, x1: TW, y1: TH };
+          obst = [];
+          blots = [];
+          renderChips();
+          renderSetup();
+          placePens(count);
+        });
 
-renderSetup();placePens(count);makeJag();layout();
-if(document.fonts&&document.fonts.ready)document.fonts.ready.then(layout);
-requestAnimationFrame(frame);
-})();
-</script>
+        // ---------- online play (PeerJS: host runs the desk, friends connect straight to it) ----------
+        const PREFIX = "penfight-desk-v1-",
+          ABC = "ABCDEFGHJKLMNPQRSTUVWXYZ";
+        function peerOpts() {
+          try {
+            const q = new URLSearchParams(location.search).get("peerhost");
+            if (q) {
+              const [h, po] = q.split(":");
+              return { host: h, port: +po || 9000, path: "/", secure: false };
+            }
+          } catch (_) {}
+          return {};
+        }
+        function status(t) {
+          $("netStatus").textContent = t;
+        }
+        function myName() {
+          return $("nm").value.trim().slice(0, 12) || "Player";
+        }
+        function send(c, m) {
+          try {
+            if (c && c.open) c.send(m);
+          } catch (_) {}
+        }
+        function broadcast(m) {
+          for (const id in NET.conns) send(NET.conns[id], m);
+        }
+        function sendHost(m) {
+          send(NET.host, m);
+        }
+        function wake() {
+          try {
+            navigator.wakeLock &&
+              navigator.wakeLock.request("screen").catch(() => {});
+          } catch (_) {}
+        }
+        function netReset() {
+          try {
+            NET.peer && NET.peer.destroy();
+          } catch (_) {}
+          NET = NET0();
+        }
+        function lockBtns(on) {
+          $("hostBtn").disabled = on;
+          $("joinBtn").disabled = on;
+        }
+        function netMsg(e) {
+          const t = e && e.type;
+          if (t === "browser-incompatible")
+            return "This browser can't play online. Try Chrome or Safari.";
+          if (
+            [
+              "network",
+              "server-error",
+              "socket-error",
+              "socket-closed",
+            ].includes(t)
+          )
+            return "Couldn't reach the online server. Check your internet and try again.";
+          return "Something went wrong going online. Please try again.";
+        }
+        function noPeerLib() {
+          if (window.Peer) return false;
+          status(
+            "Online play couldn't load. Check your internet connection and reload the page.",
+          );
+          return true;
+        }
 
-</body></html>
+        function hostDesk(tries = 0) {
+          if (noPeerLib()) return;
+          store.set("name", myName());
+          netReset();
+          status("Opening a desk…");
+          lockBtns(true);
+          const code = Array.from(
+            { length: 4 },
+            () => ABC[Math.floor(Math.random() * ABC.length)],
+          ).join("");
+          const peer = new Peer(PREFIX + code, peerOpts());
+          NET.peer = peer;
+          peer.on("open", () => {
+            if (NET.peer !== peer) return;
+            NET.mode = "host";
+            NET.code = code;
+            NET.mySeat = 0;
+            NET.seats = [{ kind: "host", name: myName(), type: kinds[0] }];
+            wins = [0, 0, 0, 0];
+            rounds = 0;
+            lockBtns(false);
+            status("");
+            openLobby();
+          });
+          peer.on("connection", (c) => {
+            c.on("data", (d) => hostRecv(c, d));
+            c.on("close", () => hostDrop(c.peer));
+            c.on("error", () => {});
+          });
+          peer.on("error", (e) => {
+            if (NET.peer !== peer) return;
+            if (e.type === "unavailable-id" && tries < 4) {
+              hostDesk(tries + 1);
+              return;
+            }
+            if (NET.mode === "host") return; // desk already open: friends stay connected even if the server blips
+            netReset();
+            lockBtns(false);
+            status(netMsg(e));
+          });
+          peer.on("disconnected", () => {
+            if (NET.peer === peer && !peer.destroyed)
+              setTimeout(() => {
+                try {
+                  if (!peer.destroyed) peer.reconnect();
+                } catch (_) {}
+              }, 1500);
+          });
+        }
+        function hostRecv(c, d) {
+          if (NET.mode !== "host" || !d || typeof d !== "object") return;
+          NET.seen[c.peer] = performance.now();
+          if (d.t === "p") return;
+          if (d.t === "bye") {
+            hostDrop(c.peer);
+            return;
+          }
+          if (d.t === "hello") {
+            if (phase !== "lobby") {
+              send(c, { t: "busy" });
+              setTimeout(() => c.close(), 500);
+              return;
+            }
+            let idx = NET.seats.length;
+            if (idx >= 4) {
+              idx = NET.seats.findIndex((x) => x.kind === "cpu");
+              if (idx < 0) {
+                send(c, { t: "full" });
+                setTimeout(() => c.close(), 500);
+                return;
+              }
+            }
+            NET.conns[c.peer] = c;
+            NET.seen[c.peer] = performance.now();
+            NET.seats[idx] = {
+              kind: "remote",
+              peer: c.peer,
+              name: String(d.name || "Player").slice(0, 12),
+              type: TYPES[d.type] ? d.type : "ballpoint",
+            };
+            wins = [0, 0, 0, 0];
+            rounds = 0;
+            sfx.turn();
+            renderLobby();
+            broadcastLobby();
+            return;
+          }
+          if (!NET.conns[c.peer]) return;
+          const idx = NET.seats.findIndex((x) => x.peer === c.peer);
+          if (
+            d.t === "type" &&
+            phase === "lobby" &&
+            idx >= 0 &&
+            TYPES[d.type]
+          ) {
+            NET.seats[idx].type = d.type;
+            renderLobby();
+            broadcastLobby();
+          } else if (d.t === "aim") {
+            if (phase === "aim" && NET.owners[cur] === c.peer)
+              NET.remoteAim =
+                Array.isArray(d.a) && Array.isArray(d.p)
+                  ? { a: d.a.map(Number), p: d.p.map(Number) }
+                  : null;
+          } else if (d.t === "shot") {
+            if (
+              phase === "aim" &&
+              NET.owners[cur] === c.peer &&
+              Array.isArray(d.a) &&
+              Array.isArray(d.d)
+            ) {
+              const p = pens[cur],
+                ax = clamp(+d.a[0], p.x - p.hl - 3, p.x + p.hl + 3),
+                ay = clamp(+d.a[1], p.y - p.hl - 3, p.y + p.hl + 3),
+                l = Math.hypot(+d.d[0], +d.d[1]) || 1;
+              shoot(
+                p,
+                [ax, ay],
+                [d.d[0] / l, d.d[1] / l],
+                clamp(+d.pw || 0, 0.08, 1),
+              );
+            }
+          }
+        }
+        function hostDrop(id) {
+          if (NET.mode !== "host" || !NET.conns[id]) return;
+          const conn = NET.conns[id];
+          delete NET.conns[id];
+          setTimeout(() => {
+            try {
+              conn.close();
+            } catch (_) {}
+          }, 200);
+          const idx = NET.seats.findIndex((x) => x.peer === id);
+          if (idx < 0) return;
+          const name = NET.seats[idx].name;
+          if (phase === "lobby") {
+            NET.seats.splice(idx, 1);
+            wins = [0, 0, 0, 0];
+            rounds = 0;
+            renderLobby();
+            broadcastLobby();
+            return;
+          }
+          NET.seats[idx] = { kind: "cpu", type: NET.seats[idx].type };
+          NET.owners[idx] = "cpu";
+          const p = pens[idx];
+          if (!p) return;
+          p.human = false;
+          hint(`${name} left. The computer plays for them now.`);
+          renderChips();
+          if (cur === idx && phase === "aim") {
+            teacher = null;
+            NET.remoteAim = null;
+            phase = "cpu";
+            const g = gameId;
+            setTimeout(() => aiPlay(g), 650);
+          }
+        }
+        function lobbyMsg() {
+          return {
+            t: "lobby",
+            code: NET.code,
+            seats: NET.seats.map((x) => ({
+              kind: x.kind,
+              name: x.kind === "cpu" ? "" : x.name,
+              type: x.type,
+            })),
+          };
+        }
+        function broadcastLobby() {
+          if (NET.mode !== "host") return;
+          const m = lobbyMsg();
+          for (const id in NET.conns)
+            send(NET.conns[id], {
+              ...m,
+              you: NET.seats.findIndex((x) => x.peer === id),
+            });
+        }
+        function sendInit() {
+          NET.blotSig = null;
+          NET.lastSnap = 0;
+          NET.ev = NET.ev.filter((e) => e[0] === "s");
+          const base = {
+            t: "init",
+            pens: pens.map((p) => ({
+              i: p.i,
+              name: p.name,
+              type: p.type,
+              hl: p.hl,
+              r: p.r,
+              human: p.human,
+            })),
+            obst: obst.map((o) => ({ kind: o.kind, hl: o.hl, r: o.r })),
+            jag,
+          };
+          for (const id in NET.conns)
+            send(NET.conns[id], { ...base, you: NET.owners.indexOf(id) });
+        }
+        function aimNow() {
+          if (drag && phase === "aim")
+            return {
+              a: drag.anchor,
+              p: [drag.start[0] - drag.pt[0], drag.start[1] - drag.pt[1]],
+            };
+          if (NET.remoteAim && phase === "aim") return NET.remoteAim;
+          if (aiAnim) {
+            const k = Math.min(aiAnim.t / 0.6, 1),
+              e = 1 - Math.pow(1 - k, 3);
+            return {
+              a: aiAnim.anchor,
+              p: [
+                aiAnim.dir[0] * e * aiAnim.power * MAXPULL,
+                aiAnim.dir[1] * e * aiAnim.power * MAXPULL,
+              ],
+            };
+          }
+          return null;
+        }
+        const r2 = (v) => Math.round(v * 100) / 100;
+        function hostTick(now) {
+          if (phase === "lobby" || phase === "setup") {
+            NET.ev = [];
+            return;
+          }
+          const aim = aimNow(),
+            busy =
+              phase === "moving" ||
+              phase === "shrink" ||
+              phase === "settle" ||
+              aim ||
+              teacher ||
+              NET.ev.length ||
+              pens.some((p) => p.fall >= 0 && p.fall < 1);
+          if (now - NET.lastSnap < (busy ? 50 : 250)) return;
+          NET.lastSnap = now;
+          const m = {
+            t: "s",
+            p: pens.map((p) => [
+              r2(p.x),
+              r2(p.y),
+              r2(p.a),
+              p.alive ? 1 : 0,
+              r2(p.fall),
+              (p.double ? 1 : 0) |
+                (p.heavy ? 2 : 0) |
+                (p.shield ? 4 : 0) |
+                (p.heavyOn ? 8 : 0),
+              p.human ? 1 : 0,
+            ]),
+            o: obst.map((o) => [
+              r2(o.x),
+              r2(o.y),
+              r2(o.a),
+              o.gone ? 1 : 0,
+              r2(o.fade),
+            ]),
+            B: [r2(B.x0), r2(B.y0), r2(B.x1), r2(B.y1)],
+            c: cur,
+            ph: phase,
+            h: NET.baseHint,
+            tt: teacher ? r2(teacher.t) : -1,
+            aim,
+            w: wins.slice(),
+            ev: NET.ev,
+          };
+          const sig = blots.map((b) => b.id).join(",");
+          if (sig !== NET.blotSig) {
+            NET.blotSig = sig;
+            m.bl = blots.map((b) => ({
+              id: b.id,
+              x: r2(b.x),
+              y: r2(b.y),
+              r: b.r,
+              pts: b.pts.map(r2),
+              drops: b.drops.map((d) => d.map(r2)),
+            }));
+          }
+          NET.ev = [];
+          broadcast(m);
+        }
+
+        function joinDesk() {
+          if (noPeerLib()) return;
+          const code = $("code")
+            .value.trim()
+            .toUpperCase()
+            .replace(/[^A-Z]/g, "");
+          $("code").value = code;
+          if (code.length !== 4) {
+            status("Enter the 4-letter desk code from the host.");
+            return;
+          }
+          store.set("name", myName());
+          netReset();
+          NET.mode = "joining";
+          status(`Looking for desk ${code}…`);
+          lockBtns(true);
+          const peer = new Peer(peerOpts());
+          NET.peer = peer;
+          const fail = (t) => {
+            if (NET.peer !== peer) return;
+            clearTimeout(timer);
+            netReset();
+            lockBtns(false);
+            status(t);
+          };
+          const timer = setTimeout(() => {
+            if (NET.mode === "joining")
+              fail(
+                `Couldn't connect to desk ${code}. Check the code and make sure the host still has Pen Fight open.`,
+              );
+          }, 15000);
+          peer.on("open", () => {
+            if (NET.peer !== peer) return;
+            const c = peer.connect(PREFIX + code, {
+              reliable: true,
+              serialization: "json",
+            });
+            NET.host = c;
+            c.on("open", () =>
+              send(c, { t: "hello", name: myName(), type: kinds[0] }),
+            );
+            c.on("data", (d) => {
+              if (NET.peer === peer) clientRecv(d, fail);
+            });
+            c.on("close", () => {
+              if (NET.peer !== peer) return;
+              if (NET.mode === "joining") fail(`Couldn't join desk ${code}.`);
+              else hostGone();
+            });
+            c.on("error", () => {});
+          });
+          peer.on("error", (e) => {
+            if (NET.peer !== peer) return;
+            if (e.type === "peer-unavailable")
+              fail(
+                `No desk called ${code}. Check the code and make sure the host still has Pen Fight open.`,
+              );
+            else if (NET.mode === "joining") fail(netMsg(e));
+          });
+          peer.on("disconnected", () => {});
+        }
+        function clientRecv(d, fail) {
+          if (!d || typeof d !== "object") return;
+          NET.lastHeard = performance.now();
+          if (d.t === "p") return;
+          if (d.t === "lobby") {
+            const first = NET.mode !== "client";
+            NET.mode = "client";
+            NET.code = d.code;
+            NET.seats = d.seats;
+            NET.mySeat = d.you;
+            if (first) {
+              lockBtns(false);
+              status("");
+              sfx.turn();
+            }
+            if (phase !== "lobby") openLobby();
+            else renderLobby();
+          } else if (d.t === "busy")
+            fail(
+              "That desk is in the middle of a fight. Ask the host to go back to the lobby, then join again.",
+            );
+          else if (d.t === "full")
+            fail("That desk is full. Four pens is the limit.");
+          else if (d.t === "init") clientInit(d);
+          else if (d.t === "s" && pens.length && phase !== "lobby")
+            applySnap(d);
+          else if (d.t === "closed") hostGone();
+        }
+        function clientInit(d) {
+          gameId++;
+          NET.mySeat = d.you;
+          pens = d.pens.map((m) => ({
+            ...PENS[m.i],
+            ...m,
+            x: TW / 2,
+            y: TH / 2,
+            a: 0,
+            tx: null,
+            alive: true,
+            fall: -1,
+            vx: 0,
+            vy: 0,
+            w: 0,
+            double: false,
+            heavy: false,
+            heavyOn: false,
+            shield: false,
+          }));
+          obst = d.obst.map((o) => ({
+            ...o,
+            x: -999,
+            y: -999,
+            a: 0,
+            tx: null,
+            gone: false,
+            fade: 1,
+          }));
+          jag = d.jag;
+          B = { x0: 0, y0: 0, x1: TW, y1: TH };
+          blots = [];
+          chips = [];
+          banner = null;
+          teacher = null;
+          drag = null;
+          aiAnim = null;
+          NET.sent = false;
+          NET.aim = null;
+          NET.chipSig = "";
+          phase = "wait";
+          ["setup", "over", "lobby"].forEach((id) => ($(id).hidden = true));
+          layout();
+          wake();
+          renderChips();
+        }
+        function applySnap(d) {
+          d.p.forEach((a, i) => {
+            const p = pens[i];
+            if (!p) return;
+            if (p.tx == null) {
+              p.x = a[0];
+              p.y = a[1];
+              p.a = a[2];
+            }
+            p.tx = a[0];
+            p.ty = a[1];
+            p.ta = a[2];
+            p.alive = !!a[3];
+            p.fall = a[4];
+            p.double = !!(a[5] & 1);
+            p.heavy = !!(a[5] & 2);
+            p.shield = !!(a[5] & 4);
+            p.heavyOn = !!(a[5] & 8);
+            p.human = !!a[6];
+          });
+          d.o.forEach((a, i) => {
+            const o = obst[i];
+            if (!o) return;
+            if (o.tx == null) {
+              o.x = a[0];
+              o.y = a[1];
+              o.a = a[2];
+            }
+            o.tx = a[0];
+            o.ty = a[1];
+            o.ta = a[2];
+            o.gone = !!a[3];
+            o.fade = a[4];
+          });
+          if (d.bl) {
+            const old = {},
+              now = performance.now();
+            blots.forEach((b) => (old[b.id] = b.born));
+            blots = d.bl.map((b) => ({ ...b, born: old[b.id] ?? now }));
+          }
+          B = { x0: d.B[0], y0: d.B[1], x1: d.B[2], y1: d.B[3] };
+          phase = d.ph;
+          cur = d.c;
+          wins = d.w;
+          NET.aim = d.aim;
+          teacher = d.tt >= 0 ? { t: d.tt } : null;
+          NET.baseHint = d.h;
+          for (const e of d.ev) {
+            if (e[0] === "s") {
+              try {
+                sfx[e[1]](...e[2]);
+              } catch (_) {}
+            } else if (e[0] === "b") banner = { txt: e[1], col: e[2], t: 0 };
+            else if (e[0] === "k") shake = Math.max(shake, e[1]);
+            else if (e[0] === "g") burst(e[1], e[2]);
+            else if (e[0] === "o") showOver(e[1]);
+          }
+          const sig = JSON.stringify([
+            cur,
+            phase === "over",
+            pens.map((p) => [p.alive, p.double, p.heavy, p.shield, p.human]),
+            wins,
+          ]);
+          if (sig !== NET.chipSig) {
+            NET.chipSig = sig;
+            renderChips();
+          }
+          refreshHint();
+        }
+        function clientTick(dt) {
+          const k = 1 - Math.exp(-dt * 16);
+          for (const o of pens.concat(obst)) {
+            if (o.tx == null) continue;
+            if (Math.hypot(o.tx - o.x, o.ty - o.y) > 20) {
+              o.x = o.tx;
+              o.y = o.ty;
+              o.a = o.ta;
+            } else {
+              o.x += (o.tx - o.x) * k;
+              o.y += (o.ty - o.y) * k;
+              const da = Math.atan2(Math.sin(o.ta - o.a), Math.cos(o.ta - o.a));
+              o.a += da * k;
+            }
+          }
+          if (phase === "shrink" && Math.random() < 0.6) edgeChip();
+          if (
+            NET.sent &&
+            (phase !== "aim" || performance.now() - NET.sentAt > 2500)
+          )
+            NET.sent = false;
+        }
+
+        function openLobby() {
+          gameId++;
+          phase = "lobby";
+          teacher = null;
+          aiAnim = null;
+          drag = null;
+          banner = null;
+          NET.remoteAim = null;
+          $("setup").hidden = true;
+          $("over").hidden = true;
+          $("lobby").hidden = false;
+          renderLobby();
+          renderChips();
+          hint("");
+        }
+        function renderLobby() {
+          const host = NET.mode === "host";
+          $("lobCode").textContent = NET.code;
+          const rows = NET.seats.map((x, i) => {
+            const me = i === NET.mySeat,
+              canType = me || (host && x.kind === "cpu");
+            const nm =
+              x.kind === "cpu"
+                ? `${PENS[i].name} computer`
+                : x.name + (me ? " (you)" : x.kind === "host" ? " (host)" : "");
+            return `<div class="slot"><i style="background:${PENS[i].base}"></i><span class="nm">${esc(nm)}</span>
+      <div class="opts"><button type="button" id="lt${i}" data-lt="${i}"${canType ? "" : " disabled"}>${TYPES[x.type].label}</button>
+      ${host && x.kind === "cpu" ? `<button type="button" id="lr${i}" data-lr="${i}" class="cpu">Remove</button>` : ""}</div></div>`;
+          });
+          if (host && NET.seats.length < 4)
+            rows.push(`<div class="slot"><i style="border:2px dashed ${PENS[NET.seats.length].base};box-sizing:border-box"></i><span class="nm" style="color:var(--muted)">Empty seat</span>
+    <div class="opts"><button type="button" id="ladd" data-add="1" class="cpu">Add computer</button></div></div>`);
+          $("lobSeats").innerHTML = rows.join("");
+          $("lobStart").hidden = !host;
+          $("lobStart").disabled = NET.seats.length < 2;
+          $("lobWait").hidden = host;
+          if (!NET.linkShown)
+            $("lobHelp").textContent = host
+              ? NET.seats.length < 2
+                ? "Friends open Pen Fight, tap Online and type this code. You can also add a computer player."
+                : "Everyone ready? Start the fight."
+              : "You're in! Pick your pen while you wait for the host.";
+        }
+        $("lobSeats").addEventListener("click", (e) => {
+          const d = e.target.dataset;
+          if (!d || e.target.disabled) return;
+          if (d.lt != null) {
+            const i = +d.lt,
+              x = NET.seats[i];
+            if (!x) return;
+            const nt =
+              TYPE_KEYS[(TYPE_KEYS.indexOf(x.type) + 1) % TYPE_KEYS.length];
+            x.type = nt;
+            if (i === NET.mySeat) {
+              kinds[0] = nt;
+              store.set("kinds", kinds.join(","));
+            }
+            renderLobby();
+            if (NET.mode === "host") broadcastLobby();
+            else sendHost({ t: "type", type: nt });
+          } else if (d.lr != null && NET.mode === "host") {
+            NET.seats.splice(+d.lr, 1);
+            wins = [0, 0, 0, 0];
+            rounds = 0;
+            renderLobby();
+            broadcastLobby();
+          } else if (d.add && NET.mode === "host" && NET.seats.length < 4) {
+            NET.seats.push({ kind: "cpu", type: "ballpoint" });
+            wins = [0, 0, 0, 0];
+            rounds = 0;
+            renderLobby();
+            broadcastLobby();
+          }
+        });
+        $("lobStart").addEventListener("click", () => {
+          if (NET.mode !== "host" || NET.seats.length < 2) return;
+          initAudio();
+          NET.linkShown = false;
+          newGame();
+        });
+        $("invite").addEventListener("click", () => {
+          const url = location.href.split("#")[0] + "#join-" + NET.code,
+            text = `Join my Pen Fight desk! Code: ${NET.code}`;
+          const show = (msg) => {
+            NET.linkShown = true;
+            $("lobHelp").textContent = msg;
+          };
+          if (navigator.share) {
+            navigator.share({ title: "Pen Fight", text, url }).catch(() => {});
+            return;
+          }
+          try {
+            navigator.clipboard.writeText(url).then(
+              () => show("Invite link copied. Paste it to your friends."),
+              () => show(url),
+            );
+          } catch (_) {
+            show(url);
+          }
+        });
+        function backToMenu(msg) {
+          gameId++;
+          phase = "setup";
+          teacher = null;
+          aiAnim = null;
+          drag = null;
+          banner = null;
+          ["over", "lobby"].forEach((id) => ($(id).hidden = true));
+          $("setup").hidden = false;
+          setMode("online");
+          B = { x0: 0, y0: 0, x1: TW, y1: TH };
+          obst = [];
+          blots = [];
+          chips = [];
+          wins = [0, 0, 0, 0];
+          rounds = 0;
+          placePens(count);
+          renderChips();
+          hint("");
+          lockBtns(false);
+          status(msg || "");
+        }
+        function hostGone(msg) {
+          const m =
+            NET.mode === "client" ? msg || "The host closed the desk." : "";
+          netReset();
+          backToMenu(m);
+        }
+        // heartbeat: notices phones that close the game or lose signal without saying goodbye
+        setInterval(() => {
+          const now = performance.now();
+          if (NET.mode === "host") {
+            broadcast({ t: "p" });
+            for (const id in NET.conns) {
+              if (NET.seen[id] == null) NET.seen[id] = now;
+              if (now - NET.seen[id] > 7000) hostDrop(id);
+            }
+          } else if (NET.mode === "client") {
+            sendHost({ t: "p" });
+            if (now - NET.lastHeard > 9000)
+              hostGone("Lost connection to the host.");
+          }
+        }, 1000);
+        addEventListener("pagehide", () => {
+          if (NET.mode === "host") broadcast({ t: "closed" });
+          else if (NET.mode === "client") sendHost({ t: "bye" });
+        });
+        function leaveDesk() {
+          if (NET.mode === "host") broadcast({ t: "closed" });
+          const p = NET.peer;
+          NET = NET0();
+          setTimeout(() => {
+            try {
+              p && p.destroy();
+            } catch (_) {}
+          }, 400);
+          backToMenu("");
+        }
+        $("lobLeave").addEventListener("click", leaveDesk);
+        $("leave").addEventListener("click", leaveDesk);
+        $("hostBtn").addEventListener("click", () => {
+          initAudio();
+          hostDesk();
+        });
+        $("joinBtn").addEventListener("click", () => {
+          initAudio();
+          joinDesk();
+        });
+        $("code").addEventListener("input", (e) => {
+          e.target.value = e.target.value
+            .toUpperCase()
+            .replace(/[^A-Z]/g, "")
+            .slice(0, 4);
+        });
+        $("code").addEventListener("keydown", (e) => {
+          if (e.key === "Enter") $("joinBtn").click();
+        });
+        function setMode(m) {
+          const on = m === "online";
+          $("localPane").hidden = on;
+          $("onlinePane").hidden = !on;
+          $("mLocal").setAttribute("aria-pressed", String(!on));
+          $("mOnline").setAttribute("aria-pressed", String(on));
+          store.set("mode", m);
+        }
+        $("mode").addEventListener("click", (e) => {
+          const m = e.target.dataset.m;
+          if (m) setMode(m);
+        });
+        $("nm").value = store.get("name", "");
+        setMode(store.get("mode", "local"));
+        {
+          const m = /^#join-([A-Za-z]{4})$/.exec(location.hash);
+          if (m) {
+            setMode("online");
+            $("code").value = m[1].toUpperCase();
+            status("Type your name, then tap Join.");
+          }
+        }
+
+        renderSetup();
+        placePens(count);
+        makeJag();
+        layout();
+        if (document.fonts && document.fonts.ready)
+          document.fonts.ready.then(layout);
+        requestAnimationFrame(frame);
+      })();
+    </script>
+  </body>
+</html>
