@@ -621,6 +621,22 @@
         const SPEED = 195,
           MAXPULL = 34,
           REST = 0.55;
+        // Online sync. By default every device runs the physics for each shot itself
+        // (the host only sends the shot and has the final say once pens stop).
+        // ROLLBACK: open the host's page with ?sync=snap to go back to the host
+        // streaming positions to everyone. Joining phones follow the host's choice.
+        const LOCAL_PHYSICS = (() => {
+          try {
+            return new URLSearchParams(location.search).get("sync") !== "snap";
+          } catch (_) {
+            return true;
+          }
+        })();
+        // Physics runs in fixed steps so every device computes the same motion
+        // no matter its screen refresh rate.
+        const STEP = 1 / 480;
+        let simRand = Math.random,
+          acc = 0;
         const clamp = (v, a, b) => (v < a ? a : v > b ? b : v);
 
         const store = {
@@ -677,11 +693,20 @@
           jit: 0,
           delay: 120,
           delayGoal: 120,
+          // local-physics sync
+          lp: false, // this desk uses local physics
+          shotN: 0, // host: shots fired so far
+          simN: 0, // client: the shot it last simulated
+          simActive: false, // client: running a shot's physics right now
+          quiet: false, // host: don't forward physics sounds (everyone makes their own)
+          fix: null, // client: small correction easing toward the host's result
+          fixN: 0,
+          heldBl: null,
         });
         let NET = NET0();
         function play(n, ...a) {
           sfx[n](...a);
-          if (NET.mode === "host") NET.ev.push(["s", n, a]);
+          if (NET.mode === "host" && !NET.quiet) NET.ev.push(["s", n, a]);
         }
         const esc = (t) =>
           String(t).replace(
@@ -1400,7 +1425,7 @@
         }
         function kick(v) {
           shake = Math.max(shake, v);
-          if (NET.mode === "host") NET.ev.push(["k", v]);
+          if (NET.mode === "host" && !NET.quiet) NET.ev.push(["k", v]);
         }
         function burst(x, y) {
           for (let i = 0; i < 18; i++) {
@@ -1435,9 +1460,80 @@
         }
         function showBanner(txt, col) {
           banner = { txt, col, t: 0 };
-          if (NET.mode === "host") NET.ev.push(["b", txt, col]);
+          if (NET.mode === "host" && !NET.quiet) NET.ev.push(["b", txt, col]);
         }
-        function shoot(p, anchor, dir, power) {
+        // Everything step() reads, so another device can start a shot from exactly here.
+        function simState() {
+          return {
+            p: pens.map((p) => [
+              p.x, p.y, p.a, p.vx, p.vy, p.w, p.fall,
+              (p.alive ? 1 : 0) | (p.double ? 2 : 0) | (p.heavy ? 4 : 0) |
+                (p.shield ? 8 : 0) | (p.heavyOn ? 16 : 0),
+              p.m, p.spd, p.rest, p.fr, p.dec, p.afr, p.hl, p.r,
+            ]),
+            o: obst.map((o) => [
+              o.x, o.y, o.a, o.vx, o.vy, o.w, o.fade, o.gone ? 1 : 0,
+              o.m, o.rest, o.fr, o.dec, o.afr, o.hl, o.r,
+            ]),
+            B: [B.x0, B.y0, B.x1, B.y1],
+            bl: blots.map((b) => [b.id, b.x, b.y, b.r]),
+          };
+        }
+        function loadSimState(s) {
+          s.p.forEach((a, i) => {
+            const p = pens[i];
+            if (!p) return;
+            [p.x, p.y, p.a, p.vx, p.vy, p.w, p.fall] = a;
+            const f = a[7];
+            p.alive = !!(f & 1);
+            p.double = !!(f & 2);
+            p.heavy = !!(f & 4);
+            p.shield = !!(f & 8);
+            p.heavyOn = !!(f & 16);
+            [p.m, p.spd, p.rest, p.fr, p.dec, p.afr, p.hl, p.r] = a.slice(8);
+          });
+          s.o.forEach((a, i) => {
+            const o = obst[i];
+            if (!o) return;
+            [o.x, o.y, o.a, o.vx, o.vy, o.w, o.fade] = a;
+            o.gone = !!a[7];
+            [o.m, o.rest, o.fr, o.dec, o.afr, o.hl, o.r] = a.slice(8);
+          });
+          B = { x0: s.B[0], y0: s.B[1], x1: s.B[2], y1: s.B[3] };
+          const old = {},
+            now = performance.now();
+          blots.forEach((b) => (old[b.id] = b));
+          blots = s.bl.map(([id, x, y, r]) => ({
+            pts: Array(14).fill(1),
+            drops: [],
+            born: now,
+            ...old[id],
+            id,
+            x,
+            y,
+            r,
+          }));
+        }
+        function shoot(p, anchor, dir, power, seed) {
+          if (seed == null) seed = 1 + Math.floor(Math.random() * 2147483645);
+          const lpHost = NET.mode === "host" && NET.lp;
+          if (lpHost) {
+            // Send the shot plus the exact starting state; every phone runs it itself
+            NET.shotN++;
+            broadcast({
+              t: "go",
+              n: NET.shotN,
+              i: pens.indexOf(p),
+              a: anchor,
+              d: dir,
+              pw: power,
+              seed,
+              st: simState(),
+            });
+          }
+          simRand = rng(seed); // same power-up luck on every device
+          acc = 0; // start the fixed steps together
+          NET.quiet = lpHost;
           const sp = SPEED * power * p.spd;
           p.vx += dir[0] * sp;
           p.vy += dir[1] * sp;
@@ -1458,6 +1554,7 @@
           shotAt = performance.now();
           hint("");
           play("flick", power);
+          NET.quiet = false;
         }
         function aiPlay(id) {
           if (id !== gameId || phase !== "cpu") return;
@@ -1755,11 +1852,11 @@
         function grant(p, b) {
           const opts = ["double", "heavy", "shield"].filter((k) => !p[k]);
           if (!opts.length) return;
-          const k = opts[Math.floor(Math.random() * opts.length)];
+          const k = opts[Math.floor(simRand() * opts.length)];
           p[k] = true;
           play("power");
           burst(b.x, b.y);
-          if (NET.mode === "host") NET.ev.push(["g", b.x, b.y]);
+          if (NET.mode === "host" && !NET.quiet) NET.ev.push(["g", b.x, b.y]);
           hint(`${p.name} got ${POWERS[k].label}!`);
           showBanner(POWERS[k].label.toUpperCase(), POWERS[k].col);
           renderChips();
@@ -2398,36 +2495,9 @@
                   shoot(pens[cur], a.anchor, a.dir, a.power);
               }
             }
-            const sub = 8;
-            for (let i = 0; i < sub; i++) step(dt / sub);
-            for (const p of pens)
-              if (p.fall >= 0 && p.fall < 1) {
-                p.fall = Math.min(1, p.fall + dt * 2);
-                p.x += p.vx * dt * 0.4;
-                p.y += p.vy * dt * 0.4;
-                p.a += p.w * dt * 0.4;
-              }
-            for (const o of obst)
-              if (o.gone && o.fade > 0) {
-                o.fade = Math.max(0, o.fade - dt * 2);
-                o.x += o.vx * dt * 0.4;
-                o.y += o.vy * dt * 0.4;
-                o.a += o.w * dt * 0.4;
-              }
-            if (phase === "moving" && now - shotAt > 350) {
-              const busy =
-                pens.some(
-                  (p) =>
-                    (p.alive && (p.vx || p.vy || p.w)) ||
-                    (p.fall >= 0 && p.fall < 1),
-                ) ||
-                obst.some(
-                  (o) =>
-                    (!o.gone && (o.vx || o.vy || o.w)) ||
-                    (o.gone && o.fade > 0),
-                );
-              if (!busy) endTurn(false);
-            }
+            simulate(dt);
+            if (phase === "moving" && now - shotAt > 350 && !busy())
+              endTurn(false);
             if (phase === "shrink") {
               shrinkT = Math.min(1, shrinkT + dt / 0.7);
               const e = 1 - Math.pow(1 - shrinkT, 3);
@@ -2478,8 +2548,63 @@
               afterShrink();
           }
           if (NET.mode === "host") hostTick(now);
+          // Ease away any small difference between this phone's result and the host's
+          const fx = NET.fix;
+          let fk = 0;
+          if (fx) {
+            fx.t += dt;
+            fk = Math.pow(1 - Math.min(1, fx.t / 0.25), 2);
+            if (fk <= 0) NET.fix = null;
+            else shiftAll(fx.d, fk);
+          }
           draw(now);
+          if (fk > 0) shiftAll(fx.d, -fk);
           requestAnimationFrame(frame);
+        }
+        function shiftAll(d, k) {
+          pens.concat(obst).forEach((o, i) => {
+            const v = d[i];
+            if (!v) return;
+            o.x += v[0] * k;
+            o.y += v[1] * k;
+            o.a += v[2] * k;
+          });
+        }
+        function simulate(dt) {
+          acc += dt;
+          NET.quiet = NET.mode === "host" && NET.lp;
+          while (acc >= STEP) {
+            step(STEP);
+            acc -= STEP;
+          }
+          NET.quiet = false;
+          for (const p of pens)
+            if (p.fall >= 0 && p.fall < 1) {
+              p.fall = Math.min(1, p.fall + dt * 2);
+              p.x += p.vx * dt * 0.4;
+              p.y += p.vy * dt * 0.4;
+              p.a += p.w * dt * 0.4;
+            }
+          for (const o of obst)
+            if (o.gone && o.fade > 0) {
+              o.fade = Math.max(0, o.fade - dt * 2);
+              o.x += o.vx * dt * 0.4;
+              o.y += o.vy * dt * 0.4;
+              o.a += o.w * dt * 0.4;
+            }
+        }
+        function busy() {
+          return (
+            pens.some(
+              (p) =>
+                (p.alive && (p.vx || p.vy || p.w)) ||
+                (p.fall >= 0 && p.fall < 1),
+            ) ||
+            obst.some(
+              (o) =>
+                (!o.gone && (o.vx || o.vy || o.w)) || (o.gone && o.fade > 0),
+            )
+          );
         }
 
         // ---------- menus ----------
@@ -2637,6 +2762,7 @@
           peer.on("open", () => {
             if (NET.peer !== peer) return;
             NET.mode = "host";
+            NET.lp = LOCAL_PHYSICS;
             NET.code = code;
             NET.mySeat = 0;
             NET.seats = [{ kind: "host", name: myName(), type: kinds[0] }];
@@ -2807,6 +2933,7 @@
           NET.ev = NET.ev.filter((e) => e[0] === "s");
           const base = {
             t: "init",
+            lp: NET.lp,
             pens: pens.map((p) => ({
               i: p.i,
               name: p.name,
@@ -2854,6 +2981,8 @@
           const m = {
             t: "s",
             ts: Math.round(now),
+            n: NET.shotN,
+            mv: phase === "moving" ? 1 : 0,
             p: pens.map((p) => [
               r2(p.x),
               r2(p.y),
@@ -2983,6 +3112,7 @@
           else if (d.t === "full")
             fail("That desk is full. Four pens is the limit.");
           else if (d.t === "init") clientInit(d);
+          else if (d.t === "go") clientGo(d);
           else if (d.t === "s" && pens.length && phase !== "lobby")
             queueSnap(d);
           else if (d.t === "closed") hostGone();
@@ -2990,6 +3120,11 @@
         function clientInit(d) {
           gameId++;
           NET.mySeat = d.you;
+          NET.lp = !!d.lp;
+          NET.simActive = false;
+          NET.fix = null;
+          NET.fixN = NET.simN;
+          NET.heldBl = null;
           pens = d.pens.map((m) => ({
             ...PENS[m.i],
             ...m,
@@ -3056,7 +3191,57 @@
             o.a = s[2] + Math.atan2(Math.sin(e[2] - s[2]), Math.cos(e[2] - s[2])) * k;
           });
         }
+        // A shot from the host: load its exact starting state and run it here.
+        function clientGo(d) {
+          if (!NET.lp || !pens[d.i] || !d.st) return;
+          loadSimState(d.st);
+          cur = d.i;
+          NET.simN = d.n;
+          NET.simActive = true;
+          NET.fix = null;
+          NET.aim = null;
+          teacher = null;
+          drag = null;
+          shoot(pens[d.i], d.a, d.d, d.pw, d.seed);
+          renderChips();
+        }
+        // While this phone runs a shot itself, host snapshots from before or during
+        // that shot only carry events; their positions would fight the local physics.
+        function held(d) {
+          return (
+            NET.lp &&
+            d.n != null &&
+            (d.n < NET.simN ||
+              (d.n === NET.simN && (d.mv || NET.simActive)))
+          );
+        }
+        function snapEvents(ev) {
+          for (const e of ev) {
+            if (e[0] === "s") {
+              try {
+                sfx[e[1]](...e[2]);
+              } catch (_) {}
+            } else if (e[0] === "b") banner = { txt: e[1], col: e[2], t: 0 };
+            else if (e[0] === "k") shake = Math.max(shake, e[1]);
+            else if (e[0] === "g") burst(e[1], e[2]);
+            else if (e[0] === "o") showOver(e[1]);
+          }
+        }
         function applySnap(d) {
+          if (held(d)) {
+            if (d.bl) NET.heldBl = d.bl;
+            wins = d.w;
+            snapEvents(d.ev);
+            return;
+          }
+          if (!d.bl && NET.heldBl) d.bl = NET.heldBl;
+          NET.heldBl = null;
+          // First host snapshot after a local shot: the host's result wins, eased in
+          const all = pens.concat(obst),
+            before =
+              NET.lp && NET.simN > 0 && NET.fixN !== NET.simN
+                ? all.map((o) => [o.x, o.y, o.a, o.alive !== false && !o.gone])
+                : null;
           d.p.forEach((a, i) => {
             const p = pens[i];
             if (!p) return;
@@ -3093,15 +3278,25 @@
           NET.aim = d.aim;
           teacher = d.tt >= 0 ? { t: d.tt } : null;
           NET.baseHint = d.h;
-          for (const e of d.ev) {
-            if (e[0] === "s") {
-              try {
-                sfx[e[1]](...e[2]);
-              } catch (_) {}
-            } else if (e[0] === "b") banner = { txt: e[1], col: e[2], t: 0 };
-            else if (e[0] === "k") shake = Math.max(shake, e[1]);
-            else if (e[0] === "g") burst(e[1], e[2]);
-            else if (e[0] === "o") showOver(e[1]);
+          snapEvents(d.ev);
+          if (before) {
+            NET.fixN = NET.simN;
+            NET.fix = {
+              t: 0,
+              d: all.map((o, i) => {
+                const b = before[i],
+                  dx = b[0] - o.x,
+                  dy = b[1] - o.y,
+                  live = o.alive !== false && !o.gone;
+                // big gaps or a pen that fell on only one screen: just snap
+                if (!b[3] || !live || Math.hypot(dx, dy) > 25) return null;
+                return [
+                  dx,
+                  dy,
+                  Math.atan2(Math.sin(b[2] - o.a), Math.cos(b[2] - o.a)),
+                ];
+              }),
+            };
           }
           const sig = JSON.stringify([
             cur,
@@ -3116,6 +3311,12 @@
           refreshHint();
         }
         function clientTick(dt) {
+          // Running a shot's physics here, at full frame rate with no delay
+          if (NET.simActive) {
+            simulate(dt);
+            const t = performance.now() - shotAt;
+            if ((t > 350 && !busy()) || t > 20000) NET.simActive = false;
+          }
           if (NET.off != null) {
             NET.off -= dt; // let the clock estimate drift down 1 ms/s so it can re-sync
             // Ease toward the target delay (fast to grow, slow to shrink) so time never visibly skips
@@ -3136,7 +3337,7 @@
             // a short pause looks better than guessing and snapping back.
             const a = NET.prev,
               b = NET.buf[0];
-            if (a && b && b.ts > a.ts) {
+            if (a && b && b.ts > a.ts && !held(a) && !held(b)) {
               const k = (t - a.ts) / (b.ts - a.ts),
                 maxMove = (500 * (b.ts - a.ts)) / 1000 + 5;
               blend(pens, a.p, b.p, k, maxMove);
