@@ -671,6 +671,12 @@
           chipSig: "",
           seen: {},
           lastHeard: performance.now(),
+          buf: [],
+          prev: null,
+          off: null,
+          jit: 0,
+          delay: 120,
+          delayGoal: 120,
         });
         let NET = NET0();
         function play(n, ...a) {
@@ -2841,19 +2847,13 @@
             NET.ev = [];
             return;
           }
-          const aim = aimNow(),
-            busy =
-              phase === "moving" ||
-              phase === "shrink" ||
-              phase === "settle" ||
-              aim ||
-              teacher ||
-              NET.ev.length ||
-              pens.some((p) => p.fall >= 0 && p.fall < 1);
-          if (now - NET.lastSnap < (busy ? 50 : 250)) return;
+          // A steady ~30 snapshots a second, so clients can tell a late one from a quiet desk
+          if (now - NET.lastSnap < 33) return;
           NET.lastSnap = now;
+          const aim = aimNow();
           const m = {
             t: "s",
+            ts: Math.round(now),
             p: pens.map((p) => [
               r2(p.x),
               r2(p.y),
@@ -2984,7 +2984,7 @@
             fail("That desk is full. Four pens is the limit.");
           else if (d.t === "init") clientInit(d);
           else if (d.t === "s" && pens.length && phase !== "lobby")
-            applySnap(d);
+            queueSnap(d);
           else if (d.t === "closed") hostGone();
         }
         function clientInit(d) {
@@ -2996,7 +2996,6 @@
             x: TW / 2,
             y: TH / 2,
             a: 0,
-            tx: null,
             alive: true,
             fall: -1,
             vx: 0,
@@ -3012,7 +3011,6 @@
             x: -999,
             y: -999,
             a: 0,
-            tx: null,
             gone: false,
             fade: 1,
           }));
@@ -3027,24 +3025,44 @@
           NET.sent = false;
           NET.aim = null;
           NET.chipSig = "";
+          NET.buf = [];
+          NET.prev = null;
           phase = "wait";
           ["setup", "over", "lobby"].forEach((id) => ($(id).hidden = true));
           layout();
           wake();
           renderChips();
         }
+        // The client shows the desk a little behind the host (NET.delay ms), so it
+        // usually holds a snapshot on each side of the moment it draws and can
+        // blend between them, however unevenly they arrive. The delay grows when
+        // snapshots arrive late and shrinks again when the connection calms down.
+        function queueSnap(d) {
+          // Host clock minus ours. The highest sample is the least-delayed packet.
+          const off = d.ts - performance.now();
+          if (NET.off == null || off > NET.off) NET.off = off;
+          NET.jit = Math.max(NET.off - off, NET.jit * 0.995);
+          NET.delayGoal = clamp(NET.jit + 60, 90, 250);
+          NET.buf.push(d);
+        }
+        function blend(list, from, to, k, maxMove) {
+          list.forEach((o, i) => {
+            const s = from[i],
+              e = to[i];
+            if (!o || !s || !e) return;
+            if (Math.hypot(e[0] - s[0], e[1] - s[1]) > maxMove) return; // a real jump: don't glide across it
+            o.x = s[0] + (e[0] - s[0]) * k;
+            o.y = s[1] + (e[1] - s[1]) * k;
+            o.a = s[2] + Math.atan2(Math.sin(e[2] - s[2]), Math.cos(e[2] - s[2])) * k;
+          });
+        }
         function applySnap(d) {
           d.p.forEach((a, i) => {
             const p = pens[i];
             if (!p) return;
-            if (p.tx == null) {
-              p.x = a[0];
-              p.y = a[1];
-              p.a = a[2];
-            }
-            p.tx = a[0];
-            p.ty = a[1];
-            p.ta = a[2];
+            p.x = a[0];
+            p.y = a[1];
+            p.a = a[2];
             p.alive = !!a[3];
             p.fall = a[4];
             p.double = !!(a[5] & 1);
@@ -3056,14 +3074,9 @@
           d.o.forEach((a, i) => {
             const o = obst[i];
             if (!o) return;
-            if (o.tx == null) {
-              o.x = a[0];
-              o.y = a[1];
-              o.a = a[2];
-            }
-            o.tx = a[0];
-            o.ty = a[1];
-            o.ta = a[2];
+            o.x = a[0];
+            o.y = a[1];
+            o.a = a[2];
             o.gone = !!a[3];
             o.fade = a[4];
           });
@@ -3103,18 +3116,31 @@
           refreshHint();
         }
         function clientTick(dt) {
-          const k = 1 - Math.exp(-dt * 16);
-          for (const o of pens.concat(obst)) {
-            if (o.tx == null) continue;
-            if (Math.hypot(o.tx - o.x, o.ty - o.y) > 20) {
-              o.x = o.tx;
-              o.y = o.ty;
-              o.a = o.ta;
-            } else {
-              o.x += (o.tx - o.x) * k;
-              o.y += (o.ty - o.y) * k;
-              const da = Math.atan2(Math.sin(o.ta - o.a), Math.cos(o.ta - o.a));
-              o.a += da * k;
+          if (NET.off != null) {
+            NET.off -= dt; // let the clock estimate drift down 1 ms/s so it can re-sync
+            // Ease toward the target delay (fast to grow, slow to shrink) so time never visibly skips
+            NET.delay += clamp(NET.delayGoal - NET.delay, -20 * dt, 200 * dt);
+            let t = performance.now() + NET.off - NET.delay;
+            // Out of snapshots: pause the clock here instead of racing ahead and
+            // jumping when the late one lands. The extra delay then eases back down.
+            if (!NET.buf.length && NET.prev && t > NET.prev.ts) {
+              NET.delay = Math.min(400, NET.delay + (t - NET.prev.ts));
+              t = performance.now() + NET.off - NET.delay;
+            }
+            // Apply every snapshot whose moment has come, in order (state, sounds, events)
+            while (NET.buf.length && NET.buf[0].ts <= t) {
+              NET.prev = NET.buf.shift();
+              applySnap(NET.prev);
+            }
+            // Then blend positions toward the next one. If it's late, hold still:
+            // a short pause looks better than guessing and snapping back.
+            const a = NET.prev,
+              b = NET.buf[0];
+            if (a && b && b.ts > a.ts) {
+              const k = (t - a.ts) / (b.ts - a.ts),
+                maxMove = (500 * (b.ts - a.ts)) / 1000 + 5;
+              blend(pens, a.p, b.p, k, maxMove);
+              blend(obst, a.o, b.o, k, maxMove);
             }
           }
           if (phase === "shrink" && Math.random() < 0.6) edgeChip();
@@ -3133,6 +3159,8 @@
           drag = null;
           banner = null;
           NET.remoteAim = null;
+          NET.buf = [];
+          NET.prev = null;
           $("setup").hidden = true;
           $("over").hidden = true;
           $("lobby").hidden = false;
