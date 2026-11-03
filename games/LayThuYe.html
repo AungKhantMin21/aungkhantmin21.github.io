@@ -40,6 +40,8 @@ h2{font-size:clamp(32px,6vw,46px)}
 .btn{font-family:var(--disp);font-size:24px;letter-spacing:.06em;padding:10px;border-radius:3px;border:2px solid var(--hud);
   background:var(--hud);color:#0b1a0c;cursor:pointer}
 .btn.ghost{background:transparent;color:var(--hud)}
+.back{align-self:center;font-family:var(--mono);font-size:13px;letter-spacing:.1em;text-transform:uppercase;color:var(--dim);text-decoration:none;padding:4px 6px}
+.back:hover{color:var(--hud)}.back:focus-visible{outline:2px solid var(--hud);outline-offset:2px}
 .row{display:flex;gap:10px}.row .btn{flex:1;min-width:0}
 .hudbtns{position:fixed;z-index:3;top:calc(8px + env(safe-area-inset-top,0px));right:max(10px,env(safe-area-inset-right,0px));display:flex;gap:8px}
 .hudbtns button{width:40px;height:40px;border-radius:50%;border:1px solid rgba(166,245,160,.4);background:rgba(0,0,0,.35);
@@ -77,6 +79,7 @@ button:focus-visible{outline:3px solid #fff;outline-offset:2px}
     <div class="stats"><div>Win streak<b id="mStreak">0</b></div><div>Bandits downed<b id="mKills">0</b></div></div>
     <button class="btn" id="fight" type="button">Fight</button>
     <p class="sub small" id="ctrlHint"></p>
+    <a class="back" href="../index.html#games">&larr; Back to portfolio</a>
   </div>
 </div>
 
@@ -88,6 +91,7 @@ button:focus-visible{outline:3px solid #fff;outline-offset:2px}
     <div class="stats"><div>Fight time<b id="rTime">0:00</b></div><div>Accuracy<b id="rAcc">0%</b></div><div>Hits taken<b id="rHull">0</b></div><div>Streak<b id="rStreak">0</b></div></div>
     <button class="btn" id="next" type="button">Next bandit</button>
     <button class="btn ghost" id="toMenu" type="button">Menu</button>
+    <a class="back" href="../index.html#games">&larr; Back to portfolio</a>
   </div>
 </div>
 
@@ -97,6 +101,7 @@ button:focus-visible{outline:3px solid #fff;outline-offset:2px}
     <h2>Holding</h2>
     <button class="btn" id="resume" type="button">Resume</button>
     <button class="btn ghost" id="quit" type="button">Quit to menu</button>
+    <a class="back" href="../index.html#games">&larr; Back to portfolio</a>
   </div>
 </div>
 
