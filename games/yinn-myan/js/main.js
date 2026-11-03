@@ -18,6 +18,7 @@ const store = {
 };
 
 const road = await loadRoad(new URL('../data/road.json', import.meta.url));
+const SC = await fetch(new URL('../data/scenery.json', import.meta.url)).then((r) => (r.ok ? r.json() : null)).catch(() => null); // real surroundings (tools/scenery.py)
 const { CL, RD, project, FINISH_S } = road;
 
 const audio = createAudio(SOUND);
@@ -101,6 +102,7 @@ function checkRedLights(prevS, s, d) {
   for (const sg of SIGNALS) if (prevS < sg.stop && s >= sg.stop && sg.state === 'red') { car.fines += 50000; car.reds++; toast('Ran a red light', 'Traffic fine +50,000 Ks', true); audio.ding(); }
 }
 
+const DEBUG_CAM = { on: false };
 const camPos = new THREE.Vector3(), camLook = new THREE.Vector3(); let camInit = false;
 const _tp = new THREE.Vector3(), _tl = new THREE.Vector3();
 function render(dt) {
@@ -127,6 +129,13 @@ function render(dt) {
     camPos.lerp(_tp, 1 - Math.exp(-dt * 6.5)); camLook.lerp(_tl, 1 - Math.exp(-dt * 10));
   }
   camera.position.copy(camPos); sky.position.copy(camPos);
+  if (DEBUG_CAM.on) { // tests: put the camera exactly where a reference photo was taken
+    camera.position.set(DEBUG_CAM.x, DEBUG_CAM.y, DEBUG_CAM.z); sky.position.copy(camera.position);
+    if (camera.view && camera.view.enabled) camera.clearViewOffset();
+    camera.fov = DEBUG_CAM.fov; camera.lookAt(DEBUG_CAM.lx, DEBUG_CAM.ly, DEBUG_CAM.lz); camera.updateProjectionMatrix();
+    sun.target.position.set(DEBUG_CAM.lx, 0, DEBUG_CAM.lz); sun.position.set(DEBUG_CAM.lx + SUN_DIR.x * 120, SUN_DIR.y * 120, DEBUG_CAM.lz + SUN_DIR.z * 120);
+    renderer.render(scene, camera); return;
+  }
   if (shake > 0) { camera.position.x += (Math.random() - 0.5) * shake; camera.position.y += (Math.random() - 0.5) * shake; shake = Math.max(0, shake - dt * 1.8); }
   const w = innerWidth, h = innerHeight;
   if (state === 'menu' && w > h) camera.setViewOffset(w, h, -w * 0.24, 0, w, h); else if (camera.view && camera.view.enabled) camera.clearViewOffset();
@@ -249,7 +258,7 @@ async function boot() {
   const T0 = performance.now();
   const tx = createTextures(renderer, R); TEX = tx.TEX; setCarTextures(TEX);
   const T1 = performance.now();
-  SIGNALS = buildWorld({ scene, road, decks: sim.surface.decks, TEX, R, canvasTex: tx.canvasTex, signTex: tx.signTex }).SIGNALS;
+  SIGNALS = buildWorld({ scene, road, decks: sim.surface.decks, SC, TEX, R, canvasTex: tx.canvasTex, signTex: tx.signTex }).SIGNALS;
   const T2 = performance.now();
   window.__cells = bakeStatic(scene, sun); window.__boot = [T1 - T0, T2 - T1, performance.now() - T2].map(Math.round);
   resize(); setHud(false);
@@ -264,7 +273,7 @@ async function boot() {
 window.__pyay = window.__yinn = {
   allowed: sim.allowed, raisedAt: road.raisedAt, JUNCTIONS: road.JUNCTIONS, get CLlen() { return CL.len; }, collide: sim.collide, project,
   teleport(s, layer = 0) { sim.resetCar(false, s, layer); car.lastS = s; camInit = false; },
-  step: sim.step, decks: sim.surface.decks, impacts: IMPACTS, medAt: road.medAt, curbAt: road.curbAt,
+  step: sim.step, decks: sim.surface.decks, impacts: IMPACTS, debugCam: DEBUG_CAM, medAt: road.medAt, curbAt: road.curbAt,
   renderInfo: () => renderer.info.render, setEasy(v) { sim.easy = v; }, readInput: controls.read, physics: sim.physics, frameAt: road.frameAt,
   get t() { return game.t; }, scene, renderer, get ENV() { return stage.ENV; }, car, input, CARS, get SPEC() { return sim.spec; }, start, keys, selectCar,
   simulateAccel: sim.simulateAccel, get state() { return state; },

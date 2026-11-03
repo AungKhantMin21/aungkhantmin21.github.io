@@ -4,11 +4,12 @@
 import * as THREE from 'three';
 import { lerp } from '../core/util.js';
 import { LANE_W } from '../sim/road.js';
+import { buildScenery } from './scenery.js';
 
 const CYCLE = { green: 24, amber: 4, red: 20 }; const CYC = CYCLE.green + CYCLE.amber + CYCLE.red;
 export function signalState(sg, t) { const p = (t + sg.offset) % CYC; return p < CYCLE.green ? 'green' : p < CYCLE.green + CYCLE.amber ? 'amber' : 'red'; }
 
-export function buildWorld({ scene, road, decks = [], TEX, R, canvasTex, signTex }) {
+export function buildWorld({ scene, road, decks = [], SC = null, TEX, R, canvasTex, signTex }) {
   const { RD, CL, JUNCTIONS, frameAt, curbAt, medAt, lanesAt, walkAt, raisedAt, gapAt, projectAny } = road;
 const F=v=>typeof v==='function'?v:()=>v;
 // a strip between two lateral offsets (numbers or functions of s) along the road
@@ -86,7 +87,7 @@ function buildWorld(){
       const pl=new THREE.Mesh(new THREE.PlaneGeometry(2.6,0.5),new THREE.MeshStandardMaterial({map:tex,roughness:0.5,side:THREE.DoubleSide}));pl.position.y=3.1;
       const po=new THREE.Mesh(new THREE.CylinderGeometry(0.05,0.05,3.2,6),M.metal);po.position.y=1.6;sg.add(pl,po);
       const ds=sd*(cb+1.2);sg.position.set(f.x+f.nx*ds-f.tx*(j.w/2+1.2),0.18,f.z+f.nz*ds-f.tz*(j.w/2+1.2));sg.rotation.y=Math.atan2(f.nx,f.nz);scene.add(sg);}}}
-  buildBuildings();buildTreesPoles(M);buildSignals(M);buildBusStops(M);buildFlyovers(M);
+  if(SC)buildScenery({scene,road,SC,TEX,R,canvasTex,signTex,M});else buildBuildings();buildTreesPoles(M);buildSignals(M);buildBusStops(M);buildFlyovers(M);
   // overhead road sign at the start
   const f=frameAt(70);const grp=new THREE.Group();const cb=curbAt(70);
   const board=new THREE.Mesh(new THREE.PlaneGeometry(9,2.8),new THREE.MeshStandardMaterial({map:TEX.sign,roughness:0.6,side:THREE.DoubleSide}));board.position.set(0,6.4,0);
@@ -161,6 +162,7 @@ function buildBuildings(){
   mk(lists.roof,new THREE.MeshStandardMaterial({map:TEX.roof,vertexColors:true,roughness:0.95}));
 }
 function buildTreesPoles(M){
+  if(!SC){ // v6 trees (OSM points + random street trees); real canopy trees come from scenery.js
   const trees=[];
   for(const t of RD.trees)trees.push({s:t[0],d:t[1]});
   for(const side of [1,-1])for(let s=8;s<CL.len-5;s+=13+R()*12){if(gapAt(s,side)||gapAt(s-5,side)||gapAt(s+5,side))continue;
@@ -182,6 +184,8 @@ function buildTreesPoles(M){
       const sc=r*(k===0?1:0.7+R()*0.3);o.scale.set(sc*1.2,sc*0.6,sc*1.2);o.rotation.set(0,R()*6,0);o.updateMatrix();crown.setMatrixAt(ci,o.matrix);
       col.setHSL(0.22+R()*0.07,0.42+R()*0.15,0.3+R()*0.12);crown.setColorAt(ci,col);ci++;}});
   scene.add(trunk,crown);
+  }
+  const o=new THREE.Object3D();
   // street lights on the raised median
   const poles=[];for(let s=10;s<CL.len;s+=38){if(!gapAt(s,0)&&raisedAt(s))poles.push(s);}
   const pG=new THREE.CylinderGeometry(0.08,0.13,9,8);pG.translate(0,4.5,0);const aG=new THREE.BoxGeometry(0.2,0.12,5.4);aG.translate(0,8.9,0);

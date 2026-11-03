@@ -1,0 +1,23 @@
+{
+  "_about": "Hand-checked facts that the open data lacks. Matched to Overture/OSM footprints by name (regex) or by an OSM POI (node name regex) inside the footprint. floors = above-ground storeys. src = where the fact comes from.",
+  "buildings": [
+    {"match": "^M-Tower$", "label": "M Tower", "floors": 27, "height": 111.2, "src": "Wikipedia 'List of tallest buildings in Yangon' (111 m, 27 floors, 2020), 527 Pyay Road"},
+    {"poi": "^Jasmine Palace Hotel$", "label": "Jasmine Palace Hotel", "src": "OSM POI 'Jasmine Palace Hotel' inside a 23-floor OSM footprint"},
+    {"match": "^Hledan Center$", "label": "Hledan Center", "src": "OSM building:levels=9"},
+    {"match": "^Sein Gay Har Shopping Center$", "label": "Sein Gay Har", "src": "OSM building:levels=12"},
+    {"match": "^Vantage Tower$", "label": "Vantage Tower", "src": "OSM building:levels=16"},
+    {"match": "^Novotel Yangon Max$", "label": "Novotel Yangon Max", "src": "OSM building:levels=12"},
+    {"match": "^Junction Square$", "label": "Junction Square", "src": "OSM building:levels=4"},
+    {"match": "^Taw Win Centre$", "label": "Taw Win Centre", "src": "OSM building:levels=10"},
+    {"match": "^City Mall @ St. John$", "label": "City Mall @ St. John", "src": "OSM building:levels=4"},
+    {"match": "^KAN THAR YAR", "label": "Kan Thar Yar Hospital", "src": "OSM building:levels=8"},
+    {"match": "^Sein Gayha Supermarket$", "label": "Sein Gayha", "src": "OSM building:levels=7"},
+    {"match": "^Dagon Center", "label": null, "src": "OSM building:levels"},
+    {"match": "^Diamond Condo", "label": "Diamond Condo", "src": "OSM building:levels=26"},
+    {"match": "^Pyay Garden$", "label": "Pyay Garden", "src": "OSM building:levels=25"}
+  ],
+  "pois": [
+    {"match": "KMD Computer Centre", "label": "KMD", "src": "OSM POI; building footprint not mapped"},
+    {"match": "6.5-Miles", "label": "6½ Mile", "src": "OSM bus stops 'Chauk Mile Khwal (6.5-Miles)'"}
+  ]
+}

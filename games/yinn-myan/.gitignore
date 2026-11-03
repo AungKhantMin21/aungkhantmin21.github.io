@@ -3,3 +3,4 @@ __pycache__/
 .env
 mapillary_token.txt
 data/photos/
+data/sources/
