@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Yinn Myan · ယာဉ်မြန်</title>
+<meta name="description" content="Yinn Myan (ယာဉ်မြန်): street racing on the real Pyay Road, Yangon.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;700;800&family=Barlow:wght@400;600&family=Padauk:wght@400;700&display=swap">
+<link rel="stylesheet" href="css/game.css">
+<!-- No build step: native ES modules. Three.js is pinned to an exact release on the CDN. -->
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.186.1/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.186.1/examples/jsm/"
+  }
+}
+</script>
+</head>
+<body>
+<canvas id="game"></canvas>
+
+<div class="hud chip" id="route">
+  <div class="lbl"><span>Parami</span><span>City Mall St. John</span></div>
+  <div class="bar"><div class="fill" id="routeFill"></div></div>
+  <div class="dist"><span id="distTxt">0.00 km</span><span class="my">ပြည်လမ်း</span></div>
+  <div class="next" id="nextTxt"></div>
+</div>
+<div class="hud chip" id="light"><i id="lightDot"></i><span id="lightTxt">Signal ahead</span></div>
+<div class="hud chip" id="money">
+  <div class="row"><span>Repairs</span><b id="repTxt">0 Ks</b></div>
+  <div class="row"><span>Fines</span><b id="fineTxt">0 Ks</b></div>
+  <div class="row"><span id="fuelLbl">Fuel · CO₂</span><b id="fuelTxt">0.00 L · 0.0 kg</b></div>
+</div>
+<div class="hud chip" id="dash">
+  <div><div id="spd">0</div><div id="unit">KM/H</div></div>
+  <div class="gauge">
+    <div id="carName">Car</div>
+    <div class="t"><span id="rpmLbl">RPM</span><b id="gearTxt">1</b></div>
+    <div class="meter"><i id="rpmFill"></i></div>
+    <div class="t"><span>Damage</span><b id="dmgTxt">0%</b></div>
+    <div class="meter"><i id="dmgFill"></i></div>
+  </div>
+</div>
+<div class="hud chip" id="toast"><div class="h" id="toastH"></div><div class="s" id="toastS"></div></div>
+<div class="topbtns" id="topbtns" hidden>
+  <button type="button" id="pauseBtn" aria-label="Pause"><svg viewBox="0 0 24 24" width="16" height="16" fill="currentColor"><rect x="5" y="4" width="5" height="16" rx="1"/><rect x="14" y="4" width="5" height="16" rx="1"/></svg></button>
+  <button type="button" id="sndBtn" aria-label="Turn sound off"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path id="sndWave" d="M16 9a4 4 0 0 1 0 6M18.5 6.5a8 8 0 0 1 0 11"/></svg></button>
+</div>
+
+<div id="touch">
+  <div class="tbtn" id="rst">RESET</div>
+  <div id="steerPad" aria-label="Steering: put your thumb down and slide left or right"><div class="track"><span>◀</span><span>STEER</span><span>▶</span></div><div id="knob"></div></div>
+  <div class="tbtn" id="hb">HANDBRAKE</div>
+  <div class="tbtn" id="brk">BRAKE</div>
+  <div class="tbtn" id="gas">GAS</div>
+</div>
+
+<div class="overlay menu" id="menuOv">
+  <div class="panel">
+    <div class="my">ယာဉ်မြန် · ပြည်လမ်း · ရန်ကုန်</div>
+    <h1>Yinn Myan</h1>
+    <div class="cars" id="cars"></div>
+    <div class="spec" id="spec"></div>
+    <div class="seg" id="steerSeg" role="group" aria-label="Driving assists"><span>Assists</span><button type="button" id="stEasy">Stability + traction</button><button type="button" id="stReal">Off</button></div>
+    <p class="note">Real Pyay Road from OpenStreetMap: 8.3 km from Parami to City Mall St. John. Yangon traffic and the car market come next.</p>
+    <p class="keys" id="keys"><b>↑ W</b> gas · <b>↓ S</b> brake, hold to reverse · <b>← → A D</b> steer · <b>Space</b> handbrake · <b>R</b> tow back</p>
+    <div class="btns"><button class="btn" id="startBtn" type="button" disabled>Building Pyay Road…</button></div>
+  </div>
+</div>
+<div class="overlay" id="pauseOv" hidden>
+  <div class="panel" style="max-width:360px">
+    <h2>Paused</h2>
+    <div class="btns"><button class="btn" id="resumeBtn" type="button">Resume</button><button class="btn ghost" id="quitBtn" type="button">Garage</button></div>
+  </div>
+</div>
+<div class="overlay" id="endOv" hidden>
+  <div class="panel">
+    <div class="my" id="endMy">ပြည်လမ်း</div>
+    <h2 id="endH">Run complete</h2>
+    <p class="sub" id="endP"></p>
+    <div class="stats" id="endStats"></div>
+    <div class="btns"><button class="btn" id="againBtn" type="button">Drive again</button><button class="btn ghost" id="garageBtn" type="button">Garage</button></div>
+  </div>
+</div>
+<div id="rotate" role="alert">
+  <svg width="70" height="70" viewBox="0 0 24 24" fill="none" stroke="#f3b13a" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="2" width="12" height="20" rx="2"/><path d="M11 18h2"/></svg>
+  <p>Rotate your phone sideways to drive</p>
+  <div class="my">ဖုန်းကို အလျားလိုက် လှည့်ပါ</div>
+</div>
+
+<script type="module">
+import('./js/main.js').catch(err => {
+  console.error(err);
+  const b = document.getElementById('startBtn');
+  b.textContent = '3D engine failed to load'; b.disabled = true;
+});
+</script>
+</body>
+</html>
